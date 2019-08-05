@@ -30,12 +30,3 @@ instance (Monad f) => Arrow (Derivation f) where
     go <$> f p a <*> g p aa
     where
       go (b, s1) (bb, s2) = ((b, bb), s1 <> s2)
-
-example :: Derivation f () ()
-example = proc () -> do
-  p <- fetchUri "http://yoba"
-  src <- unpack -< p
-  deps <- myDeps ["yoba", "boba"]
-  configure -< (src, deps)
-  build -< src
-  install -< src
