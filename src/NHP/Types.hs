@@ -1,8 +1,8 @@
 module NHP.Types where
 
-import           Data.Generics
 import           Data.String
 import           Data.Text
+import           GHC.Generics
 
 -- | Maybe just Text inside.
 newtype PackageId = PackageId
@@ -23,3 +23,6 @@ data Package = Package
 newtype Path = Path
   { unPath :: Text
   } deriving (Show, Eq)
+
+newtype Script = Script Text
+  deriving (Eq, Ord, Semigroup, Monoid)

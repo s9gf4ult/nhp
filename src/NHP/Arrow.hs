@@ -7,9 +7,6 @@ import           Data.Set
 import           Data.Text
 import           NHP.Types
 
-newtype Script = Script Text
-  deriving (Eq, Ord, Semigroup, Monoid)
-
 data Derivation f a b = Derivation
   { builder      :: (PackageId -> f Package) -> a -> f (b, Script)
   -- ^ Script generator. a and b are to combine building
