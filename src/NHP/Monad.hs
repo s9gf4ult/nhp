@@ -1,26 +1,37 @@
 module NHP.Monad where
 
-import           NHP.Types
+import Control.Monad.Trans.RWS.Strict (RWST(..))
+import Data.Text as T
+import NHP.Imports
+import NHP.Types
 
-data DState
+data DState = DState
+  { nameCounter :: Integer
+  } deriving Generic
 
-newtype DerivationM f a = DerivationM
-  { runDerivation
-    :: (PackageId -> f Package)
-    -> DState
-    -> f (a, Script, DState)
+data DWorld f = DWorld
+  { getPackage :: PackageId -> f Package
   }
 
-instance (Functor f) => Functor (DerivationM f) where
-  fmap f (DerivationM g) = DerivationM $ \p s -> go <$> g p s
-    where
-      go (a, s, d) = (f a, s, d)
+newtype DerivationM f a = DerivationM
+  { unDerivation :: RWST (DWorld f) Script DState f a
+  } deriving
+  ( Functor, Applicative, Monad, MonadWriter Script
+  , MonadState DState)
 
-instance (Monad f) => Applicative (DerivationM f) where
-  pure a = DerivationM $ \_p s -> pure (a, mempty, s)
-  (DerivationM mf) <*> (DerivationM ma) = DerivationM $ \p d -> do
-    (f, s1, d1) <- mf p d
-    (a, s2, d2) <- ma p d1
-    return (f a, s1 <> s2, d2)
+deriving instance (Monad f) => MonadReader (DWorld f) (DerivationM f)
 
--- instance
+instance MonadTrans DerivationM where
+  lift ma = DerivationM $ lift ma
+
+package :: (Monad f) => PackageId -> DerivationM f Package
+package pkgid = do
+  g <- asks getPackage
+  lift $ g pkgid
+
+newName :: (Monad f) => Text -> DerivationM f (Var a)
+newName n = do
+  st <- get
+  let c = nameCounter st
+  put $ st { nameCounter = succ c }
+  return $ Var $ n <> (T.pack $ show c)

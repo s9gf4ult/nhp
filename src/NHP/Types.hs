@@ -26,3 +26,11 @@ newtype Path = Path
 
 newtype Script = Script Text
   deriving (Eq, Ord, Semigroup, Monoid)
+
+-- | Script level variable name
+newtype Var a = Var Text
+  deriving (Eq, Show)
+
+data Url
+
+data Sha256
