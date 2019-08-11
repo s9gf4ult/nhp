@@ -37,6 +37,10 @@ infixl </>
 
 data Url
 
+
+urlText :: Url -> Text
+urlText = error "FIXME: urlText not implemented"
+
 data Sha256
 
 newtype OutputId = OutputId

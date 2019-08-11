@@ -17,8 +17,8 @@ data DWorld f = DWorld
   }
 
 data DResult = DResult
-  { writeScript :: Script
-  , writeOutputs :: Map OutputId Output
+  { script  :: Script
+  , outputs :: Map OutputId Output
   }
 
 type Derivation f = DerivationM f ()
@@ -34,8 +34,11 @@ deriving instance (Monad f) => MonadReader (DWorld f) (DerivationM f)
 instance MonadTrans DerivationM where
   lift ma = DerivationM $ lift ma
 
-outFixedPath :: OutputId -> DerivationM f (Var Path)
+outFixedPath :: OutputId -> Sha256 -> DerivationM f (Exp Path)
 outFixedPath = error "FIXME: not implemented"
+
+outPath :: (Monad f) => OutputId -> DerivationM f (Exp Path)
+outPath = error "FIXME: outPath not implemented"
 
 evalDerivation :: (Monad f) => DerivationM f a -> DerivationM f (Package, a)
 evalDerivation drv = do
@@ -58,15 +61,23 @@ getPackageOutput pkg out = case pkg ^? field @"outputs" . ix out of
   Just p  -> return p
 
 -- | Gets binary from specified package and sets dependency on it.
-packageBin :: (Monad f) => PackageId -> Path -> DerivationM f Path
-packageBin pkgid binName = do
+packageBin :: (Monad f) => PackageId -> OutputId -> Path -> DerivationM f Path
+packageBin pkgid out binName = do
   pkg <- package pkgid
-  path <- getPackageOutput pkg def
+  path <- getPackageOutput pkg out
   return $ path </> "bin" </> binName
 
-newName :: (Monad f) => Text -> DerivationM f (Var a)
-newName n = do
-  st <- get
-  let c = nameCounter st
-  put $ st { nameCounter = succ c }
-  return $ Var $ n <> (T.pack $ show c)
+-- | Generates script calling binary with given arguments
+callBin :: (Monad f) => Path -> [Exp Text] -> DerivationM f ()
+callBin = error "FIXME: not implemented"
+
+-- | Call @curl@ binary from @curl@ package for example.
+simpleCallBin :: (Monad f) => PackageId -> [Exp Text] -> DerivationM f ()
+simpleCallBin pkgId args = do
+  p <- packageBin pkgId def (Path $ unPackageId pkgId)
+  callBin p args
+
+-- | Wraps script in @pushd@ and @popd@ so internal computation works
+-- inside given directory
+within :: Exp Path -> DerivationM f a -> DerivationM f a
+within = error "FIXME: within not implemented"

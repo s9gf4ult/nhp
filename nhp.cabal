@@ -21,6 +21,7 @@ library
                      , DataKinds
                      , DeriveGeneric
                      , FlexibleContexts
+                     , FlexibleInstances
                      , GADTs
                      , GeneralizedNewtypeDeriving
                      , MultiParamTypeClasses
