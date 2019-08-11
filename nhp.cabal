@@ -29,7 +29,6 @@ library
                      , StandaloneDeriving
                      , TypeApplications
   exposed-modules:  NHP
-                  , NHP.Arrow
                   , NHP.Imports
                   , NHP.Monad
                   , NHP.MonadicExample
