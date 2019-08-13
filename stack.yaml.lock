@@ -3,7 +3,14 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: nix-derivation-1.0.2@sha256:dc1f13f89d37d4dcc7a46dbac7f6b4e8cd2877f4af99e35b9cb8255d08179bd4,3123
+    pantry-tree:
+      size: 778
+      sha256: 78bdbd163b6232ca7e66a40a19f1e3c015e8c6332595bc6e1a5b06ddee76dff0
+  original:
+    hackage: nix-derivation-1.0.2
 snapshots:
 - completed:
     size: 500539
