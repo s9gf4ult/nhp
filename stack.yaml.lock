@@ -11,6 +11,13 @@ packages:
       sha256: 78bdbd163b6232ca7e66a40a19f1e3c015e8c6332595bc6e1a5b06ddee76dff0
   original:
     hackage: nix-derivation-1.0.2
+- completed:
+    hackage: autoexporter-1.1.14@sha256:9f3e5c56eab856d405b0f45a711b4f9e0f88bca2cbc87d4f9a9918e1225ce646,1639
+    pantry-tree:
+      size: 503
+      sha256: da37a3a32327a64e81843fe7afcc6d2d5d99a5d88f03b5ab35079a84a1cde53a
+  original:
+    hackage: autoexporter-1.1.14
 snapshots:
 - completed:
     size: 500539

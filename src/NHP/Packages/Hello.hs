@@ -1,6 +1,6 @@
 module NHP.Packages.Hello where
 
-import           NHP.Import
+import           NHP.PackageImports
 
 hello :: (Monad f) => DerivationM f ()
 hello = do

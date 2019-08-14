@@ -1,4 +1,8 @@
 module NHP.Packages where
 
-allPackages :: PackageBucket
-allPackages = error "FIXME: allPackages not implemented"
+import           NHP.Bucket
+import           NHP.Imports
+import           NHP.Packages.Hello
+
+allPackages :: (Monad f) => Either Text (PackageBucket f)
+allPackages = addPackage "hello" hello emptyBucket

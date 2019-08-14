@@ -11,6 +11,8 @@ import           Data.Coerce                  as X
 import           Data.Default                 as X
 import           Data.Generics.Product.Fields as X
 import           Data.Map.Strict              as X (Map)
+import           Data.String                  as X
 import           Data.Text                    as X (Text)
 import           GHC.Generics                 as X (Generic)
 import           GHC.Stack                    as X
+import           Nix.Derivation               as X
