@@ -5,7 +5,7 @@ import           Data.Text   as T
 import           NHP.Imports
 import           NHP.Types
 
--- | Script in Lua
+-- | Script in Lua (or Bash?)
 data Script
 
 instance Semigroup Script
