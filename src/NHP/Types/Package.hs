@@ -16,6 +16,3 @@ data Package = Package
   , derivation   :: Derivation
   , dependencies :: [Package]
   } deriving (Generic)
-
-instance HasField "outputs" Package Package (Map Text DerivationOutput) (Map Text DerivationOutput) where
-  field = field @"derivation" . field @"outputs"

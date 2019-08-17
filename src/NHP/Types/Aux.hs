@@ -36,3 +36,7 @@ data Output = SimpleOutput | FixedHashOutput Sha256
 newtype OutputPath = OutputPath
   { unOutputPath :: Text
   } deriving (Eq, Ord)
+
+data Platform
+
+data License

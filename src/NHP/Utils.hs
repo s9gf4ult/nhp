@@ -1,7 +1,7 @@
-module NHP.Monad.Utils where
+module NHP.Utils where
 
 import NHP.Imports
-import NHP.Monad.Type
+import NHP.Monad
 import NHP.Types
 import NHP.Script
 
@@ -11,25 +11,10 @@ outFixedPath = error "FIXME: not implemented"
 outPath :: (Monad f) => OutputId -> DerivationM f (Exp Path)
 outPath = error "FIXME: outPath not implemented"
 
-evalDerivation :: (Monad f) => DerivationM f a -> DerivationM f (Package, a)
-evalDerivation drv = do
-  bd <- asks _evalDerivation
-  lift $ bd drv
-
--- | Set dependency on given package
-evalPackage :: (Monad f) => PackageId -> DerivationM f Package
-evalPackage pkgid = do
-  g <- asks _evalPackage
-  lift $ g pkgid
-
-failDerivation :: (Monad f, HasCallStack) => Text -> DerivationM f a
-failDerivation t = do
-  f <- asks _failDerivation
-  lift $ f t
 
 getPackageOutput :: (Monad f) => Package -> OutputId -> DerivationM f Path
 getPackageOutput pkg out = case pkg ^? field @"derivation" . field @"outputs" . ix (unOutputId out) of
-  Nothing -> failDerivation
+  Nothing -> failDerivation $ DerivationFailed
     $ "Not found out " <> unOutputId out <> " in package " <> unPackageId (packageId pkg)
   Just out  -> return $ out ^. field @"path" . re _Path
 
