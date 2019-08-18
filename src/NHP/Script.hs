@@ -26,3 +26,12 @@ pathLit = error "FIXME: pathLit not implemented"
 
 toTextExp :: Exp a -> Exp Text
 toTextExp = error "FIXME: toTextExp not implemented"
+
+bashInterpreter :: PackageFile
+bashInterpreter = PackageFile "bash" "out" "/bin/bash"
+
+runScript :: Script -> ScriptResult
+runScript script = ScriptResult
+  { interpreter = bashInterpreter
+  , script      = (error "FIXME: not implemented")
+  }

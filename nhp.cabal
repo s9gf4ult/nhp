@@ -41,7 +41,6 @@ library
                   , NHP.Monad.Backend
                   , NHP.Monad.DrvResult
                   , NHP.Monad.Type
-                  , NHP.MonadicExample
                   , NHP.PackageImports
                   , NHP.Packages
                   , NHP.Packages.Hello
@@ -61,6 +60,7 @@ library
                      , system-filepath
                      , text
                      , transformers
+                     , vector
   hs-source-dirs:      src
   build-tools:      autoexporter
 

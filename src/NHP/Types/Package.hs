@@ -1,12 +1,7 @@
 module NHP.Types.Package where
 
 import           NHP.Imports
-
--- | Maybe just Text inside.
-newtype PackageId = PackageId
-  { unPackageId :: Text }
-  deriving (Show, Eq, Ord, IsString)
-
+import           NHP.Types.Aux
 
 -- | Baked package with resolved paths and dependencies built in. Can
 -- not be changed, can be only resolved from package bucket. Have link

@@ -5,7 +5,7 @@ import           NHP.Imports
 import           Prelude         hiding (FilePath)
 
 newtype Path = Path
-  { unPath :: Text
+  { pathText :: Text
   } deriving (Show, Eq, IsString)
 
 _Path :: Prism' Path FilePath
@@ -51,3 +51,25 @@ platformX86_64_linux :: Platform
 platformX86_64_linux = Platform "x86_64-linux"
 
 data License
+
+-- | Maybe just Text inside.
+newtype PackageId = PackageId
+  { unPackageId :: Text }
+  deriving (Show, Eq, Ord, IsString)
+
+-- | Some file in the package.
+data PackageFile = PackageFile
+  { package :: PackageId
+  , output  :: OutputId
+  , path    :: Path
+  }
+
+data ScriptResult = ScriptResult
+  { interpreter :: PackageFile
+  -- ^ The interpreter to run the script
+  , script      :: ByteString
+  -- ^ The raw generated script
+  , args        :: Path -> Vector Text
+  -- ^ Generate the arguments for the interpreter Using the path of
+  -- the script
+  }

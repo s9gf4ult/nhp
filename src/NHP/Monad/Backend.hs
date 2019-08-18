@@ -1,8 +1,8 @@
 module NHP.Monad.Backend where
 
-import NHP.Monad.Type
-import NHP.Types
-import NHP.Imports
+import           NHP.Imports
+import           NHP.Monad.Type
+import           NHP.Types
 
 evalDerivation :: (Monad f) => DerivationM f a -> DerivationM f (Package, a)
 evalDerivation drv = do
@@ -24,3 +24,8 @@ storePath :: (Monad f) => FilePath -> DerivationM f Path
 storePath fp = do
   s <- asks _storePath
   lift $ s fp
+
+storeBinary :: (Monad f) => ByteString -> DerivationM f Path
+storeBinary bs = do
+  s <- asks _storeBinary
+  lift $ s bs

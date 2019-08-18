@@ -1,25 +1,12 @@
 module NHP.Monad.DrvResult where
 
+import           Data.Map.Strict   as M
 import           NHP.Imports
+import           NHP.Monad.Backend
 import           NHP.Monad.Type
-import NHP.Monad.Backend
 import           NHP.Script
 import           NHP.Types
-import Data.Map.Strict as M
 
--- | Some file in the package.
-data PackageFile = PackageFile
-  { package :: PackageId
-  , output :: OutputId
-  , path :: Path
-  }
-
-data ScriptResult = ScriptResult
-  { interpreter :: PackageFile
-  -- ^ The interpreter to run the script
-  , script :: ByteString
-  -- ^ The raw generated script
-  }
 
 appendScript :: (Monad f) => Script -> DerivationM f ()
 appendScript s = DerivationM $ do
@@ -45,6 +32,22 @@ setLicense :: (Monad f) => Maybe License -> DerivationM f ()
 setLicense license = DerivationM $ do
   modify $ field @"license" .~ license
 
-runScript :: Derivation f ScriptResult
-runScript = DerivationM $ do
-  script <- use $ field @"script"
+listenScript :: (Monad f) => DerivationM f a -> DerivationM f (a, Script)
+listenScript ma = do
+  oldS <- DerivationM $ use (field @"script")
+    <* modify (field @"script" .~ mempty)
+  a <- ma -- Modify the empty script
+  maScript <- DerivationM $ use (field @"script")
+    <* modify (field @"script" .~ oldS)
+  return (a, maScript)
+
+getPackageOutput :: (Monad f, HasCallStack) => Package -> OutputId -> DerivationM f Path
+getPackageOutput pkg out = case pkg ^? field @"derivation" . field @"outputs" . ix (unOutputId out) of
+  Nothing  -> failDerivation $ OutputNotFound (pkg ^. field @"packageId") out
+  Just out -> return $ out ^. field @"path" . re _Path
+
+packageFile :: (Monad f, HasCallStack) => PackageFile -> DerivationM f Path
+packageFile (PackageFile pkgId out path) = do
+  pkg <- evalPackage pkgId
+  outPath <- getPackageOutput pkg out
+  return $ outPath </> path

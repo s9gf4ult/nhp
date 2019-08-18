@@ -17,6 +17,7 @@ import           Data.Maybe                   as X
 import           Data.Set                     as X (Set)
 import           Data.String                  as X
 import           Data.Text                    as X (Text)
+import           Data.Vector                  as X (Vector)
 import           GHC.Generics                 as X (Generic)
 import           GHC.Stack                    as X
 import           Nix.Derivation               as X

@@ -1,12 +1,12 @@
 module NHP.Monad.Type where
 
-import NHP.Imports
-import Control.Monad.Trans.RWS.Strict (RWST(..))
-import Data.Text as T
-import NHP.Imports
-import NHP.Types
-import NHP.Script
-import Data.Map.Strict as M
+import           Control.Monad.Trans.RWS.Strict (RWST (..))
+import           Data.Map.Strict                as M
+import           Data.Text                      as T
+import           NHP.Imports
+import           NHP.Imports
+import           NHP.Script
+import           NHP.Types
 
 -- | Multiple output declarations.
 data OutputExistsError = OutputExistsError
@@ -22,6 +22,7 @@ data DerivationFail
   -- ^ The program will not work correctly or build script will fail
   -- to build the derivation.
   | OutputAlreadyExists OutputExistsError
+  | OutputNotFound PackageId OutputId
   | DerivationFailed Text
   -- ^ Eval time failure
   deriving (Ord, Eq, Generic)
@@ -34,30 +35,34 @@ data Backend f = Backend
   , _evalDerivation :: forall a. DerivationM f a -> f (Package, a)
   -- ^ Same but for nested nameless derivations. Like derivation for
   -- downloads.
-  , _storePath :: FilePath -> f Path
+  , _storePath      :: FilePath -> f Path
   -- ^ Store some file or directory in the store as fixed hash path
   -- and returns the path. The path will be added to the "inputSrcs"
   -- of the derivation
+  , _storeBinary    :: ByteString -> f Path
+  -- ^ Store some binary data in the store as file and give it a new
+  -- path.
   , _failDerivation :: forall a. HasCallStack => DerivationFail -> f a
   -- ^ Fail the derivation with message.
   }
 
 data DrvResult = DrvResult
-  { script  :: Script
+  { script   :: Script
   -- ^ Building script
-  , outputs :: Map OutputId Output
+  , outputs  :: Map OutputId Output
   -- ^ Outputs of the derivation.
-  , license :: Maybe License
+  , license  :: Maybe License
   , platform :: Maybe Platform
-  , env :: Map Text Text
+  , env      :: Map Text Text
   } deriving (Generic)
 
 emptyResult :: DrvResult
 emptyResult = DrvResult
-  { script =  mempty
-  , outputs = mempty
-  , license = Nothing
+  { script   =  mempty
+  , outputs  = mempty
+  , license  = Nothing
   , platform = Nothing
+  , env      = mempty
   }
 
 -- | The derivation monad. We dont derive the 'MonadReader' and
@@ -74,7 +79,7 @@ deriving instance (Monad f) => MonadReader (Backend f) (DerivationM f)
 instance MonadTrans DerivationM where
   lift ma = DerivationM $ lift ma
 
-runDerivationM :: Monad f => DerivationM f a -> Backend f -> f (a, DrvResult)
-runDerivationM drv backend = drop <$> runRWST (unDerivation drv) backend emptyResult
+runDerivationM :: Monad f => Backend f -> DerivationM f a -> f (a, DrvResult)
+runDerivationM backend drv = drop <$> runRWST (unDerivation drv) backend emptyResult
   where
     drop (a, b, _) = (a, b)

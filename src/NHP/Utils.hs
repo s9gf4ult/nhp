@@ -11,12 +11,6 @@ outFixedPath = error "FIXME: not implemented"
 outPath :: (Monad f) => OutputId -> DerivationM f (Exp Path)
 outPath = error "FIXME: outPath not implemented"
 
-getPackageOutput :: (Monad f) => Package -> OutputId -> DerivationM f Path
-getPackageOutput pkg out = case pkg ^? field @"derivation" . field @"outputs" . ix (unOutputId out) of
-  Nothing  -> failDerivation $ DerivationFailed
-    $ "Not found out " <> unOutputId out <> " in package " <> unPackageId (packageId pkg)
-  Just out -> return $ out ^. field @"path" . re _Path
-
 -- | Gets binary from specified package and sets dependency on it.
 packageBin :: (Monad f) => PackageId -> OutputId -> Path -> DerivationM f Path
 packageBin pkgid out binName = do

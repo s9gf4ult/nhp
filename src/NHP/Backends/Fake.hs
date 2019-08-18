@@ -3,13 +3,15 @@
 
 module NHP.Backends.Fake where
 
-import NHP.Bucket
-import Data.Map.Strict as M
-import NHP.Error
-import NHP.Imports
-import Filesystem.Path as F
-import NHP.Monad
-import NHP.Types
+import           Data.Map.Strict as M
+import           Data.Set        as S
+import           Filesystem.Path as F
+import           NHP.Bucket
+import           NHP.Error
+import           NHP.Imports
+import           NHP.Monad
+import           NHP.Script
+import           NHP.Types
 
 data EvalState
 
@@ -31,7 +33,12 @@ evalDerivation bucket pkgId = case bucket ^? field @"packages" . ix pkgId of
   Nothing  -> throwWithStack $ NoPackageFound pkgId
   Just drvM -> do
     let backend = (error "FIXME: not implemented")
-    ((), result) <- runDerivationM drvM backend
+    ((builderPath, builderArgs, scriptPath), result) <- runDerivationM backend $ do
+      ((), script) <- listenScript drvM
+      let ScriptResult interp scriptBin genArgs = runScript script
+      builder <- packageFile interp
+      scriptPath <- storeBinary scriptBin
+      return (builder, genArgs scriptPath, scriptPath)
     let
       deps = (error "FIXME: not implemented")
       defaultPlatform = platformText $ bucket ^. field @"platform"
@@ -39,10 +46,10 @@ evalDerivation bucket pkgId = case bucket ^? field @"packages" . ix pkgId of
         { outputs = result ^. field @"outputs"
           . to (M.fromList . fmap toOutput . M.toList)
         , inputDrvs = getInputDrvs deps
-        , inputSrcs = getInputSrcs deps
+        , inputSrcs = S.insert (scriptPath ^. _Path) $ getInputSrcs deps
         , platform  = maybe defaultPlatform platformText
           $ result ^. field @"platform"
-        , builder = builderPath
+        , builder = pathText builderPath
         , args = builderArgs
         , env = result ^. field @"env"
         }
@@ -56,10 +63,10 @@ evalDerivation bucket pkgId = case bucket ^? field @"packages" . ix pkgId of
     toOutput (outId, output) = (unOutputId outId, drv)
       where
         drv = DerivationOutput
-          { path = error "FIXME: precalculate path before the derivation"
+          { path = error "FIXME: precalculate path of the output before the derivation"
           , hashAlgo = case output of
-              FixedHashOutput _  -> "sha256"
-              _                  -> ""
+              FixedHashOutput _ -> "sha256"
+              _                 -> ""
           , hash = case output of
               FixedHashOutput sha -> sha256Text sha
               _                   -> ""
