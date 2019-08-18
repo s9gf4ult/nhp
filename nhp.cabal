@@ -25,13 +25,17 @@ library
                      , FlexibleInstances
                      , GADTs
                      , GeneralizedNewtypeDeriving
+                     , LambdaCase
                      , MultiParamTypeClasses
                      , OverloadedStrings
                      , RankNTypes
                      , StandaloneDeriving
+                     , DeriveFunctor
                      , TypeApplications
   exposed-modules:  NHP
+                  , NHP.Backends.Fake
                   , NHP.Bucket
+                  , NHP.Error
                   , NHP.Imports
                   , NHP.Monad
                   , NHP.Monad.Backend
@@ -47,6 +51,7 @@ library
                   , NHP.Types.Package
                   , NHP.Utils
   build-depends:       base ^>=4.12.0.0
+                     , bytestring
                      , containers
                      , data-default
                      , generic-lens

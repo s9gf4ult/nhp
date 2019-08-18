@@ -8,14 +8,23 @@ import NHP.Types
 import NHP.Script
 import Data.Map.Strict as M
 
+-- | Multiple output declarations.
+data OutputExistsError = OutputExistsError
+  { outputId  :: OutputId
+  , oldOutput :: Output
+  , newOutput :: Output
+  } deriving (Eq, Ord, Generic)
+
 data DerivationFail
   = PlatformNotSupported Text
   -- ^ This derivation is will not work on this platform
   | PackageBroken Text
   -- ^ The program will not work correctly or build script will fail
   -- to build the derivation.
+  | OutputAlreadyExists OutputExistsError
   | DerivationFailed Text
   -- ^ Eval time failure
+  deriving (Ord, Eq, Generic)
 
 data Backend f = Backend
   { _evalPackage    :: PackageId -> f Package
@@ -39,8 +48,22 @@ data DrvResult = DrvResult
   , outputs :: Map OutputId Output
   -- ^ Outputs of the derivation.
   , license :: Maybe License
+  , platform :: Maybe Platform
+  , env :: Map Text Text
   } deriving (Generic)
 
+emptyResult :: DrvResult
+emptyResult = DrvResult
+  { script =  mempty
+  , outputs = mempty
+  , license = Nothing
+  , platform = Nothing
+  }
+
+-- | The derivation monad. We dont derive the 'MonadReader' and
+-- 'MonadState' for it to prevent the abuse of these interfaces, which
+-- are too generic. The set of low-level methods must be consitent and
+-- minimal. Also it must protect us from generating wrong derivations.
 newtype DerivationM f a = DerivationM
   { unDerivation :: RWST (Backend f) () DrvResult f a
   } deriving
@@ -50,3 +73,8 @@ deriving instance (Monad f) => MonadReader (Backend f) (DerivationM f)
 
 instance MonadTrans DerivationM where
   lift ma = DerivationM $ lift ma
+
+runDerivationM :: Monad f => DerivationM f a -> Backend f -> f (a, DrvResult)
+runDerivationM drv backend = drop <$> runRWST (unDerivation drv) backend emptyResult
+  where
+    drop (a, b, _) = (a, b)
