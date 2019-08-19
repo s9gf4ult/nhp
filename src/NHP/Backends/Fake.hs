@@ -13,7 +13,16 @@ import           NHP.Monad
 import           NHP.Script
 import           NHP.Types
 
-data EvalState
+data CurrentPackage = CurrentPackage
+  { packageId :: PackageId
+  , inputDrvs :: Map
+  }
+
+data EvalState = EvalState
+  { cache :: Map PackageId Package
+  -- ^ Already calculated packages
+  , stack :: [CurrentPackage]
+  } deriving (Generic)
 
 data EvalError
   = NoPackageFound PackageId
