@@ -21,6 +21,3 @@ addPackage
   -> PackageBucket f
   -> Either Text (PackageBucket f)
 addPackage = error "FIXME: addPackage not implemented"
-
-evalDerivation :: (Monad f) => PackageId -> PackageBucket f -> f Package
-evalDerivation = error "FIXME: evalDerivation not implemented"

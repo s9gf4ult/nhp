@@ -41,13 +41,7 @@ listenScript ma = do
     <* modify (field @"script" .~ oldS)
   return (a, maScript)
 
-getPackageOutput :: (Monad f, HasCallStack) => Package -> OutputId -> DerivationM f Path
-getPackageOutput pkg out = case pkg ^? field @"derivation" . field @"outputs" . ix (unOutputId out) of
-  Nothing  -> failDerivation $ OutputNotFound (pkg ^. field @"packageId") out
-  Just out -> return $ out ^. field @"path" . re _Path
-
 packageFile :: (Monad f, HasCallStack) => PackageFile -> DerivationM f Path
 packageFile (PackageFile pkgId out path) = do
-  pkg <- evalPackage pkgId
-  outPath <- getPackageOutput pkg out
+  outPath <- evalPackageOutput pkgId out
   return $ outPath </> path

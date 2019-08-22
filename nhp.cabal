@@ -45,6 +45,7 @@ library
                   , NHP.Packages
                   , NHP.Packages.Hello
                   , NHP.Script
+                  , NHP.State
                   , NHP.Types
                   , NHP.Types.Aux
                   , NHP.Types.Package

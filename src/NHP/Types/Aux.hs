@@ -6,7 +6,7 @@ import           Prelude         hiding (FilePath)
 
 newtype Path = Path
   { pathText :: Text
-  } deriving (Show, Eq, IsString)
+  } deriving (Show, Eq, Ord, IsString)
 
 _Path :: Prism' Path FilePath
 _Path = error "FIXME: _Path not implemented"
@@ -29,7 +29,7 @@ sha256Text :: Sha256 -> Text
 sha256Text = error "FIXME: sha256Text not implemented"
 
 newtype OutputId = OutputId
-  { unOutputId :: Text
+  { outputIdText :: Text
   } deriving (Show, Eq, Ord, IsString)
 
 instance Default OutputId where
@@ -54,7 +54,7 @@ data License
 
 -- | Maybe just Text inside.
 newtype PackageId = PackageId
-  { unPackageId :: Text }
+  { packageIdText :: Text }
   deriving (Show, Eq, Ord, IsString)
 
 -- | Some file in the package.

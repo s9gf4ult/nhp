@@ -22,27 +22,23 @@ data DerivationFail
   -- ^ The program will not work correctly or build script will fail
   -- to build the derivation.
   | OutputAlreadyExists OutputExistsError
-  | OutputNotFound PackageId OutputId
-  | DerivationFailed Text
+  | SomeFail Text
   -- ^ Eval time failure
   deriving (Ord, Eq, Generic)
 
 data Backend f = Backend
-  { _evalPackage    :: PackageId -> f Package
+  { _evalPackageOutput :: HasCallStack => PackageId -> OutputId -> f Path
   -- ^ Dependencies of the derivation are tracked by this monadic
   -- function. Any package becomes dependency of the current
   -- derivation if evaluated with this function.
-  , _evalDerivation :: forall a. DerivationM f a -> f (Package, a)
-  -- ^ Same but for nested nameless derivations. Like derivation for
-  -- downloads.
-  , _storePath      :: FilePath -> f Path
+  , _storePath         :: HasCallStack => FilePath -> f Path
   -- ^ Store some file or directory in the store as fixed hash path
   -- and returns the path. The path will be added to the "inputSrcs"
   -- of the derivation
-  , _storeBinary    :: ByteString -> f Path
+  , _storeBinary       :: HasCallStack => ByteString -> f Path
   -- ^ Store some binary data in the store as file and give it a new
   -- path.
-  , _failDerivation :: forall a. HasCallStack => DerivationFail -> f a
+  , _failDerivation    :: forall a. HasCallStack => DerivationFail -> f a
   -- ^ Fail the derivation with message.
   }
 

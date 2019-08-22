@@ -11,13 +11,6 @@ outFixedPath = error "FIXME: not implemented"
 outPath :: (Monad f) => OutputId -> DerivationM f (Exp Path)
 outPath = error "FIXME: outPath not implemented"
 
--- | Gets binary from specified package and sets dependency on it.
-packageBin :: (Monad f) => PackageId -> OutputId -> Path -> DerivationM f Path
-packageBin pkgid out binName = do
-  pkg <- evalPackage pkgid
-  path <- getPackageOutput pkg out
-  return $ path </> "bin" </> binName
-
 -- | Generates script calling binary with given arguments
 callBin :: (Monad f) => Path -> [Exp Text] -> DerivationM f ()
 callBin = error "FIXME: not implemented"
