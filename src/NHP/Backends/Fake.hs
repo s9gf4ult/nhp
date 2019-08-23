@@ -22,7 +22,7 @@ data CurrentPackage = CurrentPackage
   { packageId   :: PackageId
   , packageDeps :: PackageDeps
   , srcDeps     :: SrcDeps
-  } deriving (Generic)
+  } deriving (Eq, Ord, Generic)
 
 currentPackage :: PackageId -> CurrentPackage
 currentPackage pkgId = CurrentPackage pkgId M.empty S.empty
@@ -35,8 +35,7 @@ setPackageDependency pkg outId = do
 
 stackHead :: (Monad f, HasCallStack) => FakeBackend f CurrentPackage
 stackHead = preuse (field @"stack" . _head) >>= \case
-  Nothing -> throwWithStack
-    $ EvalAssertionFailed "Current evaluating package is empty"
+  Nothing -> emptyStackFailure
   Just cp -> return cp
 
 setPathDependency :: (Monad f, HasCallStack) => Path -> FakeBackend f ()
@@ -52,9 +51,9 @@ data EvalState = EvalState
   } deriving (Generic)
 
 data NixBackend f = NixBackend
-  { _storeAdd       :: P.FilePath -> f Path
+  { _storeAdd       :: HasCallStack => F.FilePath -> f Path
   -- ^ Store derivation or other path in the Nix store
-  , _storeAddBinary :: ByteString -> f Path
+  , _storeAddBinary :: HasCallStack => ByteString -> f Path
   -- ^ Store binary data in the store and return the path
   }
 
@@ -63,8 +62,13 @@ data EvalError
   | NoPackageOutput PackageId OutputId
   | DerivationFailed DerivationFail
   | CircularDependencies [PackageId]
+  | PackageStackIsEmpty
   | EvalAssertionFailed Text
   deriving (Ord, Eq, Generic)
+
+emptyStackFailure :: (Monad f, HasCallStack) => FakeBackend f a
+emptyStackFailure = throwWithStack
+  $ EvalAssertionFailed "Current evaluating package is empty"
 
 newtype FakeBackend f a = FakeBackend
   { unFakeBackend :: ExceptT (WithCallStack EvalError) (RWST (NixBackend f) () EvalState f) a
@@ -78,12 +82,16 @@ instance MonadTrans FakeBackend where
 type FakeBucket f = PackageBucket (FakeBackend f)
 
 nixStoreAdd :: (Monad f, HasCallStack) => F.FilePath -> FakeBackend f Path
-nixStoreAdd = error "FIXME: nixStoreAdd not implemented"
+nixStoreAdd fp = do
+  store <- asks _storeAdd
+  lift $ store fp
 
 nixStoreAddBinary :: (Monad f, HasCallStack) => ByteString -> FakeBackend f Path
-nixStoreAddBinary = error "FIXME: storeAddBinary not implemented"
+nixStoreAddBinary bs = do
+  store <- asks _storeAddBinary
+  lift $ store bs
 
-withPackage :: (Monad f) => PackageId -> FakeBackend f a -> FakeBackend f a
+withPackage :: (Monad f, HasCallStack) => PackageId -> FakeBackend f a -> FakeBackend f a
 withPackage pkgId ma = do
   (a, newS) <- listenState $ do
     modify $ field @"stack" %~ ((currentPackage pkgId) :)
@@ -92,10 +100,19 @@ withPackage pkgId ma = do
   return a
 
 -- | Check that there is no recursion in the package stack.
-checkNoRecursion :: (Monad f) => FakeBackend f ()
-checkNoRecursion = error "FIXME: checkNoRecursion not implemented"
+checkNoRecursion :: (Monad f, HasCallStack) => FakeBackend f ()
+checkNoRecursion = do
+  use (field @"stack") >>= \case
+    [] -> emptyStackFailure
+    s@(h: t)
+      | elem h t  -> throwWithStack $ CircularDependencies
+        $ s ^.. folded . field @"packageId"
+      | otherwise -> return ()
 
-defaultBackend :: (Monad f, HasCallStack) => FakeBucket f -> Backend (FakeBackend f)
+defaultBackend
+  :: (Monad f, HasCallStack)
+  => FakeBucket f
+  -> Backend (FakeBackend f)
 defaultBackend bucket = Backend
   { _evalPackageOutput = \pkgId output -> do
       pkg <- preuse (field @"cache" . ix pkgId) >>= \case

@@ -1,9 +1,11 @@
 module NHP.Monad.Backend where
 
+import           Filesystem.Path as F
 import           NHP.Imports
 import           NHP.Monad.Type
 import           NHP.Script
 import           NHP.Types
+
 
 evalDerivation
   :: (Monad f, HasCallStack)
@@ -27,7 +29,7 @@ failDerivation t = do
   f <- asks _failDerivation
   lift $ f t
 
-storePath :: (Monad f, HasCallStack) => FilePath -> DerivationM f Path
+storePath :: (Monad f, HasCallStack) => F.FilePath -> DerivationM f Path
 storePath fp = do
   s <- asks _storePath
   lift $ s fp

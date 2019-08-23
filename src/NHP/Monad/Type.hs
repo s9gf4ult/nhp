@@ -3,6 +3,7 @@ module NHP.Monad.Type where
 import           Control.Monad.Trans.RWS.Strict (RWST (..))
 import           Data.Map.Strict                as M
 import           Data.Text                      as T
+import           Filesystem.Path                as F
 import           NHP.Imports
 import           NHP.Imports
 import           NHP.Script
@@ -31,7 +32,7 @@ data Backend f = Backend
   -- ^ Dependencies of the derivation are tracked by this monadic
   -- function. Any package becomes dependency of the current
   -- derivation if evaluated with this function.
-  , _storePath         :: HasCallStack => FilePath -> f Path
+  , _storePath         :: HasCallStack => F.FilePath -> f Path
   -- ^ Store some file or directory in the store as fixed hash path
   -- and returns the path. The path will be added to the "inputSrcs"
   -- of the derivation
