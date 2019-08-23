@@ -6,6 +6,8 @@ module NHP.Backends.Fake where
 import           Control.Monad.Trans.RWS.Strict (RWST (..))
 import           Data.Map.Strict                as M
 import           Data.Set                       as S
+import           Data.Text.Lazy.Builder         as TB
+import           Data.Text.Lazy.Encoding        as TE
 import           Filesystem.Path                as F
 import           NHP.Bucket
 import           NHP.Error
@@ -18,29 +20,28 @@ import           Prelude                        as P
 
 data CurrentPackage = CurrentPackage
   { packageId   :: PackageId
-  , packageDeps :: Map Package (Set OutputId)
-  , srcDeps     :: Set Path
+  , packageDeps :: PackageDeps
+  , srcDeps     :: SrcDeps
   } deriving (Generic)
 
 currentPackage :: PackageId -> CurrentPackage
 currentPackage pkgId = CurrentPackage pkgId M.empty S.empty
 
 setPackageDependency :: (Monad f, HasCallStack) => Package -> OutputId -> FakeBackend f ()
-setPackageDependency pkg outId = withStackHead $ \cp -> do
+setPackageDependency pkg outId = do
+  cp <- stackHead
   let addDep = M.insertWith S.union pkg (S.singleton outId)
   modify $ (field @"stack" . _head . field @"packageDeps") %~ addDep
 
-withStackHead
-  :: (Monad f, HasCallStack)
-  => (CurrentPackage -> FakeBackend f a)
-  -> FakeBackend f a
-withStackHead ma = preuse (field @"stack" . _head) >>= \case
+stackHead :: (Monad f, HasCallStack) => FakeBackend f CurrentPackage
+stackHead = preuse (field @"stack" . _head) >>= \case
   Nothing -> throwWithStack
     $ EvalAssertionFailed "Current evaluating package is empty"
-  Just cp -> ma cp
+  Just cp -> return cp
 
 setPathDependency :: (Monad f, HasCallStack) => Path -> FakeBackend f ()
-setPathDependency path = withStackHead $ \cp -> do
+setPathDependency path = do
+  cp <- stackHead
   let addDep = S.insert path
   modify $ (field @"stack" . _head . field @"srcDeps") %~ addDep
 
@@ -76,8 +77,11 @@ instance MonadTrans FakeBackend where
 
 type FakeBucket f = PackageBucket (FakeBackend f)
 
-nixStoreAdd :: F.FilePath -> FakeBackend f Path
+nixStoreAdd :: (Monad f, HasCallStack) => F.FilePath -> FakeBackend f Path
 nixStoreAdd = error "FIXME: nixStoreAdd not implemented"
+
+nixStoreAddBinary :: (Monad f, HasCallStack) => ByteString -> FakeBackend f Path
+nixStoreAddBinary = error "FIXME: storeAddBinary not implemented"
 
 withPackage :: (Monad f) => PackageId -> FakeBackend f a -> FakeBackend f a
 withPackage pkgId ma = do
@@ -133,9 +137,10 @@ derivePackage bucket pkgId = case bucket ^? field @"packages" . ix pkgId of
       builder <- packageFile interp
       scriptPath <- storeBinary scriptBin
       return (builder, genArgs scriptPath, scriptPath)
+    cp <- stackHead
     let
-      pkgDeps = (error "FIXME: not implemented")
-      srcDeps = (error "FIXME: not implemented")
+      pkgDeps = cp ^. field @"packageDeps"
+      srcDeps = cp ^. field @"srcDeps"
       defaultPlatform = platformText $ bucket ^. field @"platform"
       derivation = Derivation
         { outputs = result ^. field @"outputs"
@@ -148,9 +153,13 @@ derivePackage bucket pkgId = case bucket ^? field @"packages" . ix pkgId of
         , args = builderArgs
         , env = result ^. field @"env"
         }
+      derivationBinary = encodeUtf8 $ toLazyText $ buildDerivation derivation
+    drvPath <- nixStoreAddBinary derivationBinary
+    let
       package = Package
         { packageId = pkgId
         , derivation = derivation
+        , derivationPath = drvPath
         , packageDeps = pkgDeps
         , srcDeps = srcDeps
         }
@@ -168,8 +177,13 @@ derivePackage bucket pkgId = case bucket ^? field @"packages" . ix pkgId of
               _                   -> ""
           }
 
-getInputDrvs :: [Package] -> Map F.FilePath (Set Text)
-getInputDrvs = error "FIXME: getInputDrvs not implemented"
+getInputDrvs :: HasCallStack => PackageDeps -> Map F.FilePath (Set Text)
+getInputDrvs = M.fromList . fmap go . M.toList
+  where
+    go :: (Package, Set OutputId) -> (F.FilePath, Set Text)
+    go (pkg, outs) = (pkg ^. field @"derivationPath" . _Path, outPaths)
+      where
+        outPaths = S.fromList $ fmap outputIdText $ S.toList outs
 
-getInputSrcs :: [Package] -> Set F.FilePath
-getInputSrcs = error "FIXME: getInputSrcs not implemented"
+getInputSrcs :: HasCallStack => SrcDeps  -> Set F.FilePath
+getInputSrcs = S.fromList . fmap (view _Path) . S.toList
