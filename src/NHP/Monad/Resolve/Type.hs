@@ -1,7 +1,7 @@
 -- | Fake backend for deriving. Does not work with real nix-daemon but
 -- generates derivations purely.
 
-module NHP.Backends.Fake where
+module NHP.Monad.Resolve.Type where
 
 import           Control.Monad.Trans.RWS.Strict (RWST (..))
 import           Data.Map.Strict                as M
@@ -12,7 +12,7 @@ import           Filesystem.Path                as F
 import           NHP.Bucket
 import           NHP.Error
 import           NHP.Imports
-import           NHP.Monad
+import           NHP.Monad.Derivation
 import           NHP.Script
 import           NHP.State
 import           NHP.Types

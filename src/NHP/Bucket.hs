@@ -1,7 +1,7 @@
 module NHP.Bucket where
 
 import           NHP.Imports
-import           NHP.Monad
+import           NHP.Monad.Derivation
 import           NHP.Types
 
 data PackageBucket f = PackageBucket

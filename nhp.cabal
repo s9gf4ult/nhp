@@ -33,7 +33,6 @@ library
                      , DeriveFunctor
                      , TypeApplications
   exposed-modules:  NHP
-                  , NHP.Backends.Fake
                   , NHP.Bucket
                   , NHP.Error
                   , NHP.Imports
@@ -42,6 +41,8 @@ library
                   , NHP.Monad.Derivation.Backend
                   , NHP.Monad.Derivation.DrvResult
                   , NHP.Monad.Derivation.Type
+                  , NHP.Monad.Resolve
+                  , NHP.Monad.Resolve.Type
                   , NHP.PackageImports
                   , NHP.Packages
                   , NHP.Packages.Hello
