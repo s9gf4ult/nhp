@@ -1,9 +1,9 @@
-module NHP.Monad.DrvResult where
+module NHP.Monad.Derivation.DrvResult where
 
-import           Data.Map.Strict   as M
+import           Data.Map.Strict              as M
 import           NHP.Imports
-import           NHP.Monad.Backend
-import           NHP.Monad.Type
+import           NHP.Monad.Derivation.Backend
+import           NHP.Monad.Derivation.Type
 import           NHP.Script
 import           NHP.Types
 

@@ -1,8 +1,8 @@
-module NHP.Monad.Backend where
+module NHP.Monad.Derivation.Backend where
 
-import           Filesystem.Path as F
+import           Filesystem.Path           as F
 import           NHP.Imports
-import           NHP.Monad.Type
+import           NHP.Monad.Derivation.Type
 import           NHP.Script
 import           NHP.Types
 

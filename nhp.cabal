@@ -38,9 +38,10 @@ library
                   , NHP.Error
                   , NHP.Imports
                   , NHP.Monad
-                  , NHP.Monad.Backend
-                  , NHP.Monad.DrvResult
-                  , NHP.Monad.Type
+                  , NHP.Monad.Derivation
+                  , NHP.Monad.Derivation.Backend
+                  , NHP.Monad.Derivation.DrvResult
+                  , NHP.Monad.Derivation.Type
                   , NHP.PackageImports
                   , NHP.Packages
                   , NHP.Packages.Hello

@@ -1,4 +1,4 @@
-module NHP.Monad.Type where
+module NHP.Monad.Derivation.Type where
 
 import           Control.Monad.Trans.RWS.Strict (RWST (..))
 import           Data.Map.Strict                as M
