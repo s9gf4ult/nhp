@@ -24,6 +24,9 @@ strLit = error "FIXME: strLit not implemented"
 pathLit :: Path -> Exp Path
 pathLit = error "FIXME: pathLit not implemented"
 
+outputVar :: OutputId -> Exp Path
+outputVar = error "FIXME: outputVar not implemented"
+
 toTextExp :: Exp a -> Exp Text
 toTextExp = error "FIXME: toTextExp not implemented"
 

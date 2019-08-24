@@ -12,7 +12,8 @@ evalDerivation
   => DerivationM f ()
   -> [OutputId]
   -> DerivationM f (Map OutputId Path)
-evalDerivation drv outputs = (error "FIXME: not implemented")
+evalDerivation drv outputs = error
+  "FIXME: every derivation must have id, so this thing must be removed"
 
 -- | Set dependency on given package
 evalPackageOutput

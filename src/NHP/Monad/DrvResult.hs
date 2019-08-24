@@ -17,16 +17,21 @@ prependScript s = DerivationM $ do
   modify $ field @"script" %~ (s <>)
 
 -- | Sets output.
-setOutput :: (Monad f, HasCallStack) => OutputId -> Output -> DerivationM f ()
+setOutput :: (Monad f, HasCallStack) => OutputId -> Output -> DerivationM f (Exp Path)
 setOutput oid output = DerivationM $ do
   preuse (field @"outputs" . ix oid) >>= \case
-    Nothing -> modify $ field @"outputs" %~ (M.insert oid output)
+    Nothing -> do
+      modify $ field @"outputs" %~ (M.insert oid output)
+      return $ outputVar oid
     Just oldOid
-      | oldOid == output -> return ()
+      | oldOid == output -> return $ outputVar oid
       | otherwise        -> do
           f <- asks _failDerivation
           lift $ f $ OutputAlreadyExists
             $ OutputExistsError oid oldOid output
+
+defaultOutput :: (Monad f, HasCallStack) => DerivationM f (Exp Path)
+defaultOutput = setOutput def SimpleOutput
 
 setLicense :: (Monad f) => Maybe License -> DerivationM f ()
 setLicense license = DerivationM $ do

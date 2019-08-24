@@ -11,6 +11,9 @@ newtype Path = Path
 _Path :: Prism' Path FilePath
 _Path = error "FIXME: _Path not implemented"
 
+_PathText :: Prism' Text Path
+_PathText = error "FIXME: _PathText not implemented"
+
 (</>) :: Path -> Path -> Path
 (</>) = error "FIXME: not implemented"
 
@@ -54,8 +57,8 @@ data License
 
 -- | Maybe just Text inside.
 newtype PackageId = PackageId
-  { packageIdText :: Text }
-  deriving (Show, Eq, Ord, IsString)
+  { packageIdText :: Text
+  } deriving (Show, Eq, Ord, IsString)
 
 -- | Some file in the package.
 data PackageFile = PackageFile

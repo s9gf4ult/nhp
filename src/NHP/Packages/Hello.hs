@@ -11,7 +11,7 @@ hello = do
   tmp <- mkTmpDir
   unTar (pathLit src) tmp
   within tmp $ do
-    out <- outPath def
+    out <- defaultOutput
     configure $ defaultConfigure out
     make []
     make ["install"]

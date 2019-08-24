@@ -5,12 +5,6 @@ import           NHP.Monad
 import           NHP.Script
 import           NHP.Types
 
-outFixedPath :: OutputId -> Sha256 -> DerivationM f (Exp Path)
-outFixedPath = error "FIXME: not implemented"
-
-outPath :: (Monad f) => OutputId -> DerivationM f (Exp Path)
-outPath = error "FIXME: outPath not implemented"
-
 -- | Generates script calling binary with given arguments
 callBin :: (Monad f) => Path -> [Exp Text] -> DerivationM f ()
 callBin = error "FIXME: not implemented"
@@ -18,7 +12,9 @@ callBin = error "FIXME: not implemented"
 -- | Call @curl@ binary from @curl@ package for example.
 simpleCallBin :: (Monad f) => PackageId -> [Exp Text] -> DerivationM f ()
 simpleCallBin pkgId args = do
-  p <- packageBin pkgId def (Path $ unPackageId pkgId)
+  let binName = Path $ packageIdText pkgId
+  -- | Binary named just like package
+  p <- packageFile $ PackageFile pkgId def $ "/bin" </> binName
   callBin p args
 
 -- | Wraps script in @pushd@ and @popd@ so internal computation works
@@ -27,17 +23,17 @@ within :: Exp Path -> DerivationM f a -> DerivationM f a
 within = error "FIXME: within not implemented"
 
 -- | Fetch fixed hash derivation. The path is known at eval state.
-fetchUrl :: Monad f => Url -> Sha256 -> DerivationM f Path
+fetchUrl :: (Monad f, HasCallStack) => Url -> Sha256 -> DerivationM f Path
 fetchUrl url sha = do
-  (pkg, outId) <- evalDerivation $ deriveFetchUrl url sha
-  getPackageOutput pkg outId
+  outs <- evalDerivation (deriveFetchUrl url sha) [def]
+  maybe (failDerivation $ NoOutputFound def) return
+    $ outs ^? ix def
 
-deriveFetchUrl :: (Monad f) => Url -> Sha256 -> DerivationM f OutputId
+deriveFetchUrl :: (Monad f) => Url -> Sha256 -> DerivationM f ()
 deriveFetchUrl url sha = do
   let out = def
-  outPath <- outFixedPath out sha
+  outPath <- setOutput out $ FixedHashOutput sha
   simpleCallBin "curl" ["-o", toTextExp outPath, strLit $ urlText url]
-  return def
 
 -- | Unpacks archive with @tar@ and puts internals in one directory.
 unTar

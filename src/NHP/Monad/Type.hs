@@ -23,6 +23,7 @@ data DerivationFail
   -- ^ The program will not work correctly or build script will fail
   -- to build the derivation.
   | OutputAlreadyExists OutputExistsError
+  | NoOutputFound OutputId
   | SomeFail Text
   -- ^ Eval time failure
   deriving (Ord, Eq, Generic)
