@@ -10,6 +10,34 @@ import           NHP.Monad.Types.Error
 import           NHP.Script
 import           NHP.Types
 
+-- | The derivation monad. We dont derive the 'MonadReader' and
+-- 'MonadState' for it to prevent the abuse of these interfaces, which
+-- are too generic. The set of low-level methods must be consitent and
+-- minimal. Also it must protect us from generating wrong derivations.
+newtype DerivationM f a = DerivationM
+  { unDerivation :: RWST (DrvMethods f) () DrvResult (ResolveM f) a
+  } deriving
+  ( Functor, Applicative, Monad )
+
+-- | The resolve monad. It tracks package dependencies and calculates
+-- the derivations
+newtype ResolveM f a = ResolveM
+  { unResolveM :: ExceptT (WithCallStack ResolveError) (RWST (NixBackend f) () ResolveState f) a
+  } deriving
+  ( Functor, Applicative, Monad, MonadError (WithCallStack ResolveError)
+  , MonadState ResolveState, MonadReader (NixBackend f) )
+
+-- | The bucket generation monad
+newtype BucketM f a = BucketM
+  { unBucketM :: ExceptT (WithCallStack BucketError) (RWS () () (BucketState f)) a
+  } deriving
+  ( Functor, Applicative, Monad
+  , MonadState (BucketState f), MonadError (WithCallStack BucketError))
+
+data BucketState f = BucketState
+  { bucket :: Map PackageId (DerivationM f ())
+  } deriving (Generic)
+
 data DrvMethods f = DrvMethods
   { _evalPackageOutput :: HasCallStack => PackageId -> OutputId -> ResolveM f Path
   -- ^ Dependencies of the derivation are tracked by this monadic
@@ -43,15 +71,6 @@ data PackageBucket f = PackageBucket
   -- is not specified by the derivation)
   } deriving (Generic)
 
--- | The derivation monad. We dont derive the 'MonadReader' and
--- 'MonadState' for it to prevent the abuse of these interfaces, which
--- are too generic. The set of low-level methods must be consitent and
--- minimal. Also it must protect us from generating wrong derivations.
-newtype DerivationM f a = DerivationM
-  { unDerivation :: RWST (DrvMethods f) () DrvResult (ResolveM f) a
-  } deriving
-  ( Functor, Applicative, Monad )
-
 deriving instance (Monad f) => MonadReader (DrvMethods f) (DerivationM f)
 
 instance MonadTrans DerivationM where
@@ -76,14 +95,6 @@ data NixBackend f = NixBackend
   , _storeAddBinary :: HasCallStack => ByteString -> f Path
   -- ^ Store binary data in the store and return the path
   }
-
--- | The resolve monad. It tracks package dependencies and calculates
--- the derivations
-newtype ResolveM f a = ResolveM
-  { unResolveM :: ExceptT (WithCallStack ResolveError) (RWST (NixBackend f) () ResolveState f) a
-  } deriving
-  ( Functor, Applicative, Monad, MonadError (WithCallStack ResolveError)
-  , MonadState ResolveState, MonadReader (NixBackend f) )
 
 instance MonadTrans ResolveM where
   lift ma = ResolveM $ lift $ lift ma

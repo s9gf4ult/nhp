@@ -36,6 +36,7 @@ library
   exposed-modules:  NHP.Error
                   , NHP.Imports
                   , NHP.Monad
+                  , NHP.Monad.Bucket
                   , NHP.Monad.Derivation
                   , NHP.Monad.Derivation.Backend
                   , NHP.Monad.Derivation.DrvResult

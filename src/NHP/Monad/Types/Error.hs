@@ -30,3 +30,6 @@ data OutputExistsError = OutputExistsError
   , oldOutput :: Output
   , newOutput :: Output
   } deriving (Eq, Ord, Generic)
+
+data BucketError
+  = PackageAlreadyAdded PackageId
