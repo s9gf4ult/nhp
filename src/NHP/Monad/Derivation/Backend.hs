@@ -3,7 +3,6 @@ module NHP.Monad.Derivation.Backend where
 import           Filesystem.Path           as F
 import           NHP.Imports
 import           NHP.Monad.Derivation.Type
-import           NHP.Script
 import           NHP.Types
 
 
@@ -12,7 +11,7 @@ evalDerivation
   => DerivationM f ()
   -> [OutputId]
   -> DerivationM f (Map OutputId Path)
-evalDerivation drv outputs = error
+evalDerivation = error
   "FIXME: every derivation must have id, so this thing must be removed"
 
 -- | Set dependency on given package

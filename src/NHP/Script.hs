@@ -2,7 +2,6 @@ module NHP.Script where
 
 import           Data.String
 import           Data.Text   as T
-import           NHP.Imports
 import           NHP.Types
 
 -- | Script in Lua (or Bash?)

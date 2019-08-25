@@ -5,7 +5,6 @@ import           Data.Map.Strict                as M
 import           Data.Text                      as T
 import           Filesystem.Path                as F
 import           NHP.Imports
-import           NHP.Imports
 import           NHP.Script
 import           NHP.Types
 
@@ -78,6 +77,6 @@ instance MonadTrans DerivationM where
   lift ma = DerivationM $ lift ma
 
 runDerivationM :: Monad f => Backend f -> DerivationM f a -> f (a, DrvResult)
-runDerivationM backend drv = drop <$> runRWST (unDerivation drv) backend emptyResult
+runDerivationM backend drv = dropTup <$> runRWST (unDerivation drv) backend emptyResult
   where
-    drop (a, b, _) = (a, b)
+    dropTup (a, b, _) = (a, b)

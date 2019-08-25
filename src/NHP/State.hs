@@ -1,7 +1,6 @@
 module NHP.State where
 
 import           Control.Monad.State.Strict
-import           NHP.Imports
 
 freezeState :: (MonadState s m) => m a -> m a
 freezeState ma = do
