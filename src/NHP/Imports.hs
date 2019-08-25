@@ -19,4 +19,5 @@ import           Data.Text                    as X (Text)
 import           Data.Vector                  as X (Vector)
 import           GHC.Generics                 as X (Generic)
 import           GHC.Stack                    as X
+import           NHP.Error                    as X
 import           Nix.Derivation               as X

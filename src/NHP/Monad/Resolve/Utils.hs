@@ -8,22 +8,26 @@ import           Filesystem.Path         as F
 import           NHP.Error
 import           NHP.Imports
 import           NHP.Monad.Derivation
-import           NHP.Monad.Resolve.Type
+import           NHP.Monad.Types
 import           NHP.Script
 import           NHP.State
 import           NHP.Types
 import           Prelude                 as P
 
+emptyStackFailure :: (Monad f, HasCallStack) => ResolveM f a
+emptyStackFailure = throwWithStack
+  $ EvalAssertionFailed "Current evaluating package is empty"
+
 currentPackage :: PackageId -> CurrentPackage
 currentPackage pkgId = CurrentPackage pkgId M.empty S.empty
 
-stackHead :: (Monad f, HasCallStack) => FakeBackend f CurrentPackage
+stackHead :: (Monad f, HasCallStack) => ResolveM f CurrentPackage
 stackHead = preuse (field @"stack" . _head) >>= \case
   Nothing -> emptyStackFailure
   Just cp -> return cp
 
 modifyStackHead
-  :: (Monad f, HasCallStack, m ~ FakeBackend f)
+  :: (Monad f, HasCallStack, m ~ ResolveM f)
   => (HasCallStack => CurrentPackage -> m (CurrentPackage, a))
   -> m a
 modifyStackHead f = do
@@ -34,31 +38,31 @@ modifyStackHead f = do
       modify $ field @"stack" .~ (newH:t)
       return a
 
-setPackageDependency :: (Monad f, HasCallStack) => Package -> OutputId -> FakeBackend f ()
+setPackageDependency :: (Monad f, HasCallStack) => Package -> OutputId -> ResolveM f ()
 setPackageDependency pkg outId = modifyStackHead $ \cp -> do
   let
     addDep = M.insertWith S.union pkg (S.singleton outId)
     newCp = cp & field @"packageDeps" %~ addDep
   return (newCp, ())
 
-setPathDependency :: (Monad f, HasCallStack) => Path -> FakeBackend f ()
+setPathDependency :: (Monad f, HasCallStack) => Path -> ResolveM f ()
 setPathDependency path = modifyStackHead $ \cp -> do
   let
     addDep = S.insert path
     newCp = cp & field @"srcDeps" %~ addDep
   return (newCp, ())
 
-nixStoreAdd :: (Monad f, HasCallStack) => F.FilePath -> FakeBackend f Path
+nixStoreAdd :: (Monad f, HasCallStack) => F.FilePath -> ResolveM f Path
 nixStoreAdd fp = do
   store <- asks _storeAdd
   lift $ store fp
 
-nixStoreAddBinary :: (Monad f, HasCallStack) => ByteString -> FakeBackend f Path
+nixStoreAddBinary :: (Monad f, HasCallStack) => ByteString -> ResolveM f Path
 nixStoreAddBinary bs = do
   store <- asks _storeAddBinary
   lift $ store bs
 
-withPackage :: (Monad f, HasCallStack) => PackageId -> FakeBackend f a -> FakeBackend f a
+withPackage :: (Monad f, HasCallStack) => PackageId -> ResolveM f a -> ResolveM f a
 withPackage pkgId ma = do
   (a, newS) <- listenState $ do
     modify $ field @"stack" %~ ((currentPackage pkgId) :)
@@ -67,7 +71,7 @@ withPackage pkgId ma = do
   return a
 
 -- | Check that there is no recursion in the package stack.
-checkNoRecursion :: (Monad f, HasCallStack) => FakeBackend f ()
+checkNoRecursion :: (Monad f, HasCallStack) => ResolveM f ()
 checkNoRecursion = do
   use (field @"stack") >>= \case
     [] -> emptyStackFailure
@@ -76,11 +80,11 @@ checkNoRecursion = do
         $ s ^.. folded . field @"packageId"
       | otherwise -> return ()
 
-defaultBackend
+drvMethods
   :: (Monad f, HasCallStack)
-  => FakeBucket f
-  -> Backend (FakeBackend f)
-defaultBackend bucket = Backend
+  => PackageBucket f
+  -> DrvMethods f
+drvMethods bucket = DrvMethods
   { _evalPackageOutput = \pkgId output -> do
       pkg <- preuse (field @"cache" . ix pkgId) >>= \case
         Nothing -> do
@@ -108,14 +112,14 @@ defaultBackend bucket = Backend
 
 derivePackage
   :: (Monad f, HasCallStack)
-  => FakeBucket f
+  => PackageBucket f
   -> PackageId
-  -> FakeBackend f Package
+  -> ResolveM f Package
 derivePackage bucket pkgId = case bucket ^? field @"packages" . ix pkgId of
   Nothing  -> throwWithStack $ NoPackageFound pkgId
   Just drvM -> withPackage pkgId $ do
     checkNoRecursion
-    ((builderPath, builderArgs, scriptPath), result) <- runDerivationM (defaultBackend bucket) $ do
+    ((builderPath, builderArgs, scriptPath), result) <- runDerivationM (drvMethods bucket) $ do
       ((), script) <- listenScript drvM
       let ScriptResult interp scriptBin genArgs = runScript script
       builder <- packageFile interp

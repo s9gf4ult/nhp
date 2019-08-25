@@ -1,9 +1,10 @@
 module NHP.Monad.Derivation.DrvResult where
 
-import           Data.Map.Strict              as M
+import           Control.Monad.Trans.RWS.Strict (RWST (..))
+import           Data.Map.Strict                as M
 import           NHP.Imports
 import           NHP.Monad.Derivation.Backend
-import           NHP.Monad.Derivation.Type
+import           NHP.Monad.Types
 import           NHP.Script
 import           NHP.Types
 
@@ -50,3 +51,17 @@ packageFile :: (Monad f, HasCallStack) => PackageFile -> DerivationM f Path
 packageFile (PackageFile pkgId out path) = do
   outPath <- evalPackageOutput pkgId out
   return $ outPath </> path
+
+emptyResult :: DrvResult
+emptyResult = DrvResult
+  { script   =  mempty
+  , outputs  = mempty
+  , license  = Nothing
+  , platform = Nothing
+  , env      = mempty
+  }
+
+runDerivationM :: Monad f => DrvMethods f -> DerivationM f a -> ResolveM f (a, DrvResult)
+runDerivationM backend drv = dropTup <$> runRWST (unDerivation drv) backend emptyResult
+  where
+    dropTup (a, b, _) = (a, b)

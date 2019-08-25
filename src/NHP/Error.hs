@@ -1,9 +1,12 @@
 module NHP.Error where
 
-import NHP.Imports
+import           Control.Monad.Except
+import           GHC.Generics         (Generic)
+import           GHC.Stack
+
 
 data WithCallStack e = WithCallStack
-  { _error     :: e
+  { _error :: e
   , _stack :: CallStack
   } deriving (Generic, Functor)
 

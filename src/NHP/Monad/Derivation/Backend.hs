@@ -1,8 +1,8 @@
 module NHP.Monad.Derivation.Backend where
 
-import           Filesystem.Path           as F
+import           Filesystem.Path as F
 import           NHP.Imports
-import           NHP.Monad.Derivation.Type
+import           NHP.Monad.Types
 import           NHP.Types
 
 
@@ -22,19 +22,19 @@ evalPackageOutput
   -> DerivationM f Path
 evalPackageOutput pkgid output = do
   g <- asks _evalPackageOutput
-  lift $ g pkgid output
+  DerivationM $ lift $ g pkgid output
 
-failDerivation :: (Monad f, HasCallStack) => DerivationFail -> DerivationM f a
+failDerivation :: (Monad f, HasCallStack) => DerivationError -> DerivationM f a
 failDerivation t = do
   f <- asks _failDerivation
-  lift $ f t
+  DerivationM $ lift $ f t
 
 storePath :: (Monad f, HasCallStack) => F.FilePath -> DerivationM f Path
 storePath fp = do
   s <- asks _storePath
-  lift $ s fp
+  DerivationM $ lift $ s fp
 
 storeBinary :: (Monad f, HasCallStack) => ByteString -> DerivationM f Path
 storeBinary bs = do
   s <- asks _storeBinary
-  lift $ s bs
+  DerivationM $ lift $ s bs

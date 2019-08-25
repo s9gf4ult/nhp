@@ -1,7 +1,7 @@
 module NHP.Packages where
 
-import           NHP.Bucket
 import           NHP.Imports
+import           NHP.Monad
 import           NHP.Packages.Hello
 import           NHP.Types.Aux
 

@@ -33,17 +33,16 @@ library
                      , StandaloneDeriving
                      , DeriveFunctor
                      , TypeApplications
-  exposed-modules:  NHP.Bucket
-                  , NHP.Error
+  exposed-modules:  NHP.Error
                   , NHP.Imports
                   , NHP.Monad
                   , NHP.Monad.Derivation
                   , NHP.Monad.Derivation.Backend
                   , NHP.Monad.Derivation.DrvResult
-                  , NHP.Monad.Derivation.Type
                   , NHP.Monad.Resolve
-                  , NHP.Monad.Resolve.Type
                   , NHP.Monad.Resolve.Utils
+                  , NHP.Monad.Types
+                  , NHP.Monad.Types.Error
                   , NHP.PackageImports
                   , NHP.Packages
                   , NHP.Packages.Hello
