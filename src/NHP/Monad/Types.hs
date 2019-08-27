@@ -64,8 +64,19 @@ data DrvResult = DrvResult
   , env      :: Map Text Text
   } deriving (Generic)
 
+
+type BucketMap f = Map PackageId (BucketElement f)
+
+data BucketElement f
+  = BucketDerivation (DerivationM f ())
+  -- ^ Just a derivation
+  | BucketClosure (DerivationM f ()) (BucketMap f)
+  -- ^ Closure with main derivation and scope
+  | BucketNamespace (BucketMap f)
+  -- ^ The namespace. Isolated set of names
+
 data PackageBucket f = PackageBucket
-  { packages :: Map PackageId (DerivationM f ())
+  { packages :: BucketMap f
   , platform :: Platform
   -- ^ Default platform for all packages in the bucket. (If platform
   -- is not specified by the derivation)
