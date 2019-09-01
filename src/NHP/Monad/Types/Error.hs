@@ -4,10 +4,12 @@ import           NHP.Imports
 import           NHP.Types
 
 data ResolveError
-  = NoPackageFound PackageId
+  = NoPackageFound PackagePoint
+  | PackageNotInScope PackageId
+  | ClosureExpected PackagePoint
   | NoPackageOutput PackageId OutputId
   | DerivationFailed DerivationError
-  | CircularDependencies [PackageId]
+  | CircularDependencies [PackagePoint]
   | PackageStackIsEmpty
   | EvalAssertionFailed Text
   deriving (Ord, Eq, Generic)

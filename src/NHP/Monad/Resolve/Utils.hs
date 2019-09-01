@@ -1,5 +1,6 @@
 module NHP.Monad.Resolve.Utils where
 
+import           Data.List.NonEmpty      as NE
 import           Data.Map.Strict         as M
 import           Data.Set                as S
 import           Data.Text.Lazy.Builder  as TB
@@ -18,8 +19,13 @@ emptyStackFailure :: (Monad f, HasCallStack) => ResolveM f a
 emptyStackFailure = throwWithStack
   $ EvalAssertionFailed "Current evaluating package is empty"
 
-currentPackage :: PackageId -> CurrentPackage
-currentPackage pkgId = CurrentPackage pkgId M.empty S.empty
+currentPackage :: PackagePoint -> Scope -> CurrentPackage
+currentPackage ppoint scope = CurrentPackage
+  { point       = ppoint
+  , scope       = scope
+  , packageDeps = M.empty
+  , srcDeps     = S.empty
+  }
 
 stackHead :: (Monad f, HasCallStack) => ResolveM f CurrentPackage
 stackHead = preuse (field @"stack" . _head) >>= \case
@@ -32,7 +38,7 @@ modifyStackHead
   -> m a
 modifyStackHead f = do
   use (field @"stack") >>= \case
-    [] -> emptyStackFailure
+    []    -> emptyStackFailure
     (h:t) -> do
       (newH, a) <- f h
       modify $ field @"stack" .~ (newH:t)
@@ -62,41 +68,99 @@ nixStoreAddBinary bs = do
   store <- asks _storeAddBinary
   lift $ store bs
 
-withPackage :: (Monad f, HasCallStack) => PackageId -> ResolveM f a -> ResolveM f a
-withPackage pkgId ma = do
+withPackage
+  :: (Monad f, HasCallStack)
+  => BucketMap f
+  -> PackagePoint
+  -> (DerivationM f () -> ResolveM f a)
+  -> ResolveM f a
+withPackage bucket ppoint ma = do
   (a, newS) <- listenState $ do
-    modify $ field @"stack" %~ ((currentPackage pkgId) :)
-    ma
+    (scope, drv) <- lookupPackagePoint bucket ppoint
+    modify $ field @"stack" %~ ((currentPackage ppoint scope) :)
+    ma drv
   modify $ field @"cache" .~ (newS ^. field @"cache")
+  -- Prevent the cache from loosing
   return a
 
 -- | Check that there is no recursion in the package stack.
 checkNoRecursion :: (Monad f, HasCallStack) => ResolveM f ()
 checkNoRecursion = do
-  use (field @"stack") >>= \case
+  a <- get
+  case a ^.. field @"stack" . traversed . field @"point" of
     [] -> emptyStackFailure
     s@(h: t)
-      | elem h t  -> throwWithStack $ CircularDependencies
-        $ s ^.. folded . field @"packageId"
+      | elem h t  -> throwWithStack $ CircularDependencies s
       | otherwise -> return ()
+
+-- | Goes deep into the bucket map and collects the scope of all
+-- closures met in the pass. Returns the scope of derivation and
+-- derivation itself.
+lookupPackagePoint
+  :: forall f
+  . (Monad f, HasCallStack)
+  => BucketMap f
+  -> PackagePoint
+  -- ^ Point to find the derivation at
+  -> ResolveM f (Scope, DerivationM f ())
+lookupPackagePoint bucket ppoint =
+  go [] (const Nothing) bucket (NE.reverse ppoint)
+  where
+    go
+      :: [PackageId]
+      -- ^ Path we already passed. The head is the most deep name
+      -> Scope
+      -- ^ The scope function
+      -> BucketMap f
+      -- ^ Current closure
+      -> NonEmpty PackageId
+      -- ^ Reversed pp. The head is the most top level name
+      -> ResolveM f (Scope, DerivationM f ())
+    go breadCrumbs topScope topMap (name :| rest) = do
+      let
+        curPoint = NE.reverse $ name :| breadCrumbs
+        retScope = mkScope breadCrumbs topScope topMap
+      case topMap ^? ix name of
+        Nothing  -> throwWithStack $ NoPackageFound curPoint
+        Just elt -> case rest of
+          [] -> case elt of
+            BucketDerivation drv        -> return (retScope, drv)
+            BucketClosure drv closureMap -> return
+              ( mkScope (name : breadCrumbs) retScope closureMap
+              , drv )
+          (newName:newRest) -> case elt of
+            BucketDerivation _       ->
+              throwWithStack $ ClosureExpected curPoint
+            BucketClosure drv closureMap -> do
+              go (name : breadCrumbs) retScope closureMap (newName :| newRest)
+    mkScope :: _ -> _ -> _ -> Scope
+    mkScope brd oldScope closureMap pkgId = case closureMap ^? ix pkgId of
+      Just _elt -> Just $ pkgId :| brd
+      Nothing   -> oldScope pkgId
+
 
 drvMethods
   :: (Monad f, HasCallStack)
   => PackageBucket f
   -> DrvMethods f
 drvMethods bucket = DrvMethods
-  { _evalPackageOutput = \pkgId output -> do
-      pkg <- preuse (field @"cache" . ix pkgId) >>= \case
-        Nothing -> do
-          pkg <- derivePackage bucket pkgId
-          modify $ field @"cache" %~ (M.insert pkgId pkg)
-          return pkg
-        Just pkg -> return pkg
-      case pkg ^? field @"derivation" . field @"outputs" . ix (outputIdText output) of
-        Nothing  -> throwWithStack $ NoPackageOutput pkgId output
-        Just out -> do
-          setPackageDependency pkg output
-          return $ out ^. field @"path" . re _Path
+  { _evalPackageOutput = \pkgId output -> modifyStackHead $ \cp -> do
+      case (cp ^. field @"scope") pkgId of
+        Nothing -> throwWithStack $ PackageNotInScope pkgId
+        Just ppoint -> do
+          pkg <- preuse (field @"cache" . ix ppoint) >>= \case
+            Nothing -> do
+              pkg <- derivePackage bucket ppoint
+              modify $ field @"cache" %~ (M.insert ppoint pkg)
+              return pkg
+            Just pkg -> return pkg
+          case pkg ^? field @"derivation" . field @"outputs" . ix (outputIdText output) of
+            Nothing  -> throwWithStack $ NoPackageOutput pkgId output
+            Just out -> do
+              let newCP = cp & field @"packageDeps"
+                    %~ M.insertWith S.union pkg (S.singleton output)
+                    -- insert package dependency
+              return (newCP, out ^. field @"path" . re _Path)
   , _storePath = \path -> do
       store <- asks _storeAdd
       res <- lift $ store path
@@ -113,45 +177,43 @@ drvMethods bucket = DrvMethods
 derivePackage
   :: (Monad f, HasCallStack)
   => PackageBucket f
-  -> PackageId
+  -> PackagePoint
   -> ResolveM f Package
-derivePackage bucket pkgId = case bucket ^? field @"packages" . ix pkgId of
-  Nothing  -> throwWithStack $ NoPackageFound pkgId
-  Just drvM -> withPackage pkgId $ do
-    checkNoRecursion
-    ((builderPath, builderArgs, scriptPath), result) <- runDerivationM (drvMethods bucket) $ do
-      ((), script) <- listenScript drvM
-      let ScriptResult interp scriptBin genArgs = runScript script
-      builder <- packageFile interp
-      scriptPath <- storeBinary scriptBin
-      return (builder, genArgs scriptPath, scriptPath)
-    cp <- stackHead
-    let
-      pkgDeps = cp ^. field @"packageDeps"
-      srcDeps = cp ^. field @"srcDeps"
-      defaultPlatform = platformText $ bucket ^. field @"platform"
-      derivation = Derivation
-        { outputs = result ^. field @"outputs"
-          . to (M.fromList . fmap toOutput . M.toList)
-        , inputDrvs = getInputDrvs pkgDeps
-        , inputSrcs = S.insert (scriptPath ^. _Path) $ getInputSrcs srcDeps
-        , platform  = maybe defaultPlatform platformText
-          $ result ^. field @"platform"
-        , builder = pathText builderPath
-        , args = builderArgs
-        , env = result ^. field @"env"
-        }
-      derivationBinary = encodeUtf8 $ toLazyText $ buildDerivation derivation
-    drvPath <- nixStoreAddBinary derivationBinary
-    let
-      package = Package
-        { packageId = pkgId
-        , derivation = derivation
-        , derivationPath = drvPath
-        , packageDeps = pkgDeps
-        , srcDeps = srcDeps
-        }
-    return package
+derivePackage bucket ppoint = withPackage (bucket ^. field @"packages") ppoint $ \drvM -> do
+  checkNoRecursion
+  ((builderPath, builderArgs, scriptPath), result) <- runDerivationM (drvMethods bucket) $ do
+    ((), script) <- listenScript drvM
+    let ScriptResult interp scriptBin genArgs = runScript script
+    builder <- packageFile interp
+    scriptPath <- storeBinary scriptBin
+    return (builder, genArgs scriptPath, scriptPath)
+  cp <- stackHead
+  let
+    pkgDeps = cp ^. field @"packageDeps"
+    srcDeps = cp ^. field @"srcDeps"
+    defaultPlatform = platformText $ bucket ^. field @"platform"
+    derivation = Derivation
+      { outputs = result ^. field @"outputs"
+        . to (M.fromList . fmap toOutput . M.toList)
+      , inputDrvs = getInputDrvs pkgDeps
+      , inputSrcs = S.insert (scriptPath ^. _Path) $ getInputSrcs srcDeps
+      , platform  = maybe defaultPlatform platformText
+        $ result ^. field @"platform"
+      , builder = pathText builderPath
+      , args = builderArgs
+      , env = result ^. field @"env"
+      }
+    derivationBinary = encodeUtf8 $ toLazyText $ buildDerivation derivation
+  drvPath <- nixStoreAddBinary derivationBinary
+  let
+    package = Package
+      { point          = ppoint
+      , derivation     = derivation
+      , derivationPath = drvPath
+      , packageDeps    = pkgDeps
+      , srcDeps        = srcDeps
+      }
+  return package
   where
     toOutput (outId, output) = (outputIdText outId, drv)
       where
@@ -175,3 +237,5 @@ getInputDrvs = M.fromList . fmap go . M.toList
 
 getInputSrcs :: HasCallStack => SrcDeps  -> Set F.FilePath
 getInputSrcs = S.fromList . fmap (view _Path) . S.toList
+
+--  LocalWords:  packageDeps srcDeps env

@@ -60,6 +60,11 @@ newtype PackageId = PackageId
   { packageIdText :: Text
   } deriving (Show, Eq, Ord, IsString)
 
+-- | Head is the package name, and the rest is the scope of the
+-- package. So the last element is the first in terms of searching
+-- package.
+type PackagePoint = NonEmpty PackageId
+
 -- | Some file in the package.
 data PackageFile = PackageFile
   { package :: PackageId

@@ -20,6 +20,7 @@ library
   ghc-options:        -Wall -fno-warn-name-shadowing
   default-extensions:  Arrows
                      , DataKinds
+                     , DeriveFunctor
                      , DeriveGeneric
                      , DuplicateRecordFields
                      , FlexibleContexts
@@ -29,9 +30,10 @@ library
                      , LambdaCase
                      , MultiParamTypeClasses
                      , OverloadedStrings
+                     , PartialTypeSignatures
                      , RankNTypes
+                     , ScopedTypeVariables
                      , StandaloneDeriving
-                     , DeriveFunctor
                      , TypeApplications
   exposed-modules:  NHP.Error
                   , NHP.Imports

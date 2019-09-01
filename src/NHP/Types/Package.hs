@@ -11,7 +11,7 @@ type SrcDeps = Set Path
 -- not be changed, can be only resolved from package bucket. Have link
 -- to the original package and bucket, so you always can reresolve it.
 data Package = Package
-  { packageId      :: PackageId
+  { point          :: PackagePoint
   , derivation     :: Derivation
   , derivationPath :: Path
   , packageDeps    :: PackageDeps

@@ -69,11 +69,9 @@ type BucketMap f = Map PackageId (BucketElement f)
 
 data BucketElement f
   = BucketDerivation (DerivationM f ())
-  -- ^ Just a derivation
+  -- ^ Just2 a derivation
   | BucketClosure (DerivationM f ()) (BucketMap f)
   -- ^ Closure with main derivation and scope
-  | BucketNamespace (BucketMap f)
-  -- ^ The namespace. Isolated set of names
 
 data PackageBucket f = PackageBucket
   { packages :: BucketMap f
@@ -88,16 +86,19 @@ instance MonadTrans DerivationM where
   lift ma = DerivationM $ lift $ lift ma
 
 data ResolveState = ResolveState
-  { cache :: Map PackageId Package
+  { cache :: Map PackagePoint Package
   -- ^ Already calculated packages
   , stack :: [CurrentPackage]
   } deriving (Generic)
 
+type Scope = PackageId -> Maybe PackagePoint
+
 data CurrentPackage = CurrentPackage
-  { packageId   :: PackageId
+  { point       :: PackagePoint
+  , scope       :: Scope
   , packageDeps :: PackageDeps
   , srcDeps     :: SrcDeps
-  } deriving (Eq, Ord, Generic)
+  } deriving (Generic)
 
 -- | The nix-store backend
 data NixBackend f = NixBackend
