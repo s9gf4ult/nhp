@@ -44,13 +44,6 @@ modifyStackHead f = do
       modify $ field @"stack" .~ (newH:t)
       return a
 
-setPackageDependency :: (Monad f, HasCallStack) => Package -> OutputId -> ResolveM f ()
-setPackageDependency pkg outId = modifyStackHead $ \cp -> do
-  let
-    addDep = M.insertWith S.union pkg (S.singleton outId)
-    newCp = cp & field @"packageDeps" %~ addDep
-  return (newCp, ())
-
 setPathDependency :: (Monad f, HasCallStack) => Path -> ResolveM f ()
 setPathDependency path = modifyStackHead $ \cp -> do
   let
@@ -104,7 +97,7 @@ lookupPackagePoint
   -- ^ Point to find the derivation at
   -> ResolveM f (Scope, DerivationM f ())
 lookupPackagePoint bucket ppoint =
-  go [] (const Nothing) bucket (NE.reverse ppoint)
+  go [] (const Nothing) bucket (ppDirectPath ppoint)
   where
     go
       :: [PackageId]
@@ -112,13 +105,13 @@ lookupPackagePoint bucket ppoint =
       -> Scope
       -- ^ The scope function
       -> BucketMap f
-      -- ^ Current closure
+      -- ^ Current closure map
       -> NonEmpty PackageId
       -- ^ Reversed pp. The head is the most top level name
       -> ResolveM f (Scope, DerivationM f ())
     go breadCrumbs topScope topMap (name :| rest) = do
       let
-        curPoint = NE.reverse $ name :| breadCrumbs
+        curPoint = ppAddInner name breadCrumbs
         retScope = mkScope breadCrumbs topScope topMap
       case topMap ^? ix name of
         Nothing  -> throwWithStack $ NoPackageFound curPoint
@@ -135,9 +128,8 @@ lookupPackagePoint bucket ppoint =
               go (name : breadCrumbs) retScope closureMap (newName :| newRest)
     mkScope :: _ -> _ -> _ -> Scope
     mkScope brd oldScope closureMap pkgId = case closureMap ^? ix pkgId of
-      Just _elt -> Just $ pkgId :| brd
+      Just _elt -> Just $ ppAddInner pkgId brd
       Nothing   -> oldScope pkgId
-
 
 drvMethods
   :: (Monad f, HasCallStack)

@@ -1,8 +1,9 @@
 module NHP.Types.Aux where
 
+import           Data.List.NonEmpty as NE
 import           Filesystem.Path
 import           NHP.Imports
-import           Prelude         hiding (FilePath)
+import           Prelude            hiding (FilePath)
 
 newtype Path = Path
   { pathText :: Text
@@ -62,8 +63,21 @@ newtype PackageId = PackageId
 
 -- | Head is the package name, and the rest is the scope of the
 -- package. So the last element is the first in terms of searching
--- package.
-type PackagePoint = NonEmpty PackageId
+-- package. The head is the most inner name of the package
+newtype PackagePoint = PackagePoint (NonEmpty PackageId)
+  deriving (Eq, Ord)
+
+ppAddInner :: PackageId -> [PackageId] -> PackagePoint
+ppAddInner ppid ppids = PackagePoint $ ppid :| ppids
+
+ppDirectPath :: PackagePoint -> NonEmpty PackageId
+ppDirectPath (PackagePoint ne) = NE.reverse ne
+
+ppFromDirectPath :: NonEmpty PackageId -> PackagePoint
+ppFromDirectPath ne = PackagePoint $ NE.reverse ne
+
+ppFromReversePath :: NonEmpty PackageId -> PackagePoint
+ppFromReversePath = PackagePoint
 
 -- | Some file in the package.
 data PackageFile = PackageFile
