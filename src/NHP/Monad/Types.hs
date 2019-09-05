@@ -106,6 +106,13 @@ data NixBackend f = NixBackend
   -- ^ Store derivation or other path in the Nix store
   , _storeAddBinary :: HasCallStack => ByteString -> f Path
   -- ^ Store binary data in the store and return the path
+  , _evalOutputPath
+    :: HasCallStack
+    => Derivation
+    -- ^ Derivation with empty outputs
+    -> OutputId
+    -> Output
+    -> f DerivationOutput
   }
 
 instance MonadTrans ResolveM where

@@ -56,6 +56,16 @@ nixStoreAdd fp = do
   store <- asks _storeAdd
   lift $ store fp
 
+nixStoreEvalOutputPath
+  :: (Monad f, HasCallStack)
+  => Derivation
+  -> OutputId
+  -> Output
+  -> ResolveM f DerivationOutput
+nixStoreEvalOutputPath drv oid out = do
+  eval <- asks _evalOutputPath
+  lift $ eval drv oid out
+
 nixStoreAddBinary :: (Monad f, HasCallStack) => ByteString -> ResolveM f Path
 nixStoreAddBinary bs = do
   store <- asks _storeAddBinary
@@ -124,9 +134,8 @@ lookupPackagePoint bucket ppoint =
           (newName:newRest) -> case elt of
             BucketDerivation _       ->
               throwWithStack $ ClosureExpected curPoint
-            BucketClosure drv closureMap -> do
+            BucketClosure _drv closureMap -> do
               go (name : breadCrumbs) retScope closureMap (newName :| newRest)
-    mkScope :: _ -> _ -> _ -> Scope
     mkScope brd oldScope closureMap pkgId = case closureMap ^? ix pkgId of
       Just _elt -> Just $ ppAddInner pkgId brd
       Nothing   -> oldScope pkgId
@@ -173,28 +182,32 @@ derivePackage
   -> ResolveM f Package
 derivePackage bucket ppoint = withPackage (bucket ^. field @"packages") ppoint $ \drvM -> do
   checkNoRecursion
-  ((builderPath, builderArgs, scriptPath), result) <- runDerivationM (drvMethods bucket) $ do
+  ((builderPath, builderArgs), result) <- runDerivationM (drvMethods bucket) $ do
     ((), script) <- listenScript drvM
     let ScriptResult interp scriptBin genArgs = runScript script
     builder <- packageFile interp
     scriptPath <- storeBinary scriptBin
-    return (builder, genArgs scriptPath, scriptPath)
+    return (builder, genArgs scriptPath)
   cp <- stackHead
   let
     pkgDeps = cp ^. field @"packageDeps"
     srcDeps = cp ^. field @"srcDeps"
     defaultPlatform = platformText $ bucket ^. field @"platform"
-    derivation = Derivation
-      { outputs = result ^. field @"outputs"
-        . to (M.fromList . fmap toOutput . M.toList)
+    preDerivation = Derivation
+      { outputs   = M.empty
       , inputDrvs = getInputDrvs pkgDeps
-      , inputSrcs = S.insert (scriptPath ^. _Path) $ getInputSrcs srcDeps
+      , inputSrcs = getInputSrcs srcDeps
       , platform  = maybe defaultPlatform platformText
         $ result ^. field @"platform"
-      , builder = pathText builderPath
-      , args = builderArgs
-      , env = result ^. field @"env"
+      , builder   = pathText builderPath
+      , args      = builderArgs
+      , env       = result ^. field @"env"
       }
+  outputs <- for (result ^. field @"outputs". to M.toList) $ \(outId, out) -> do
+    path <- nixStoreEvalOutputPath preDerivation outId out
+    return (outputIdText outId, path)
+  let
+    derivation = preDerivation & field @"outputs" .~ M.fromList outputs
     derivationBinary = encodeUtf8 $ toLazyText $ buildDerivation derivation
   drvPath <- nixStoreAddBinary derivationBinary
   let
@@ -206,18 +219,6 @@ derivePackage bucket ppoint = withPackage (bucket ^. field @"packages") ppoint $
       , srcDeps        = srcDeps
       }
   return package
-  where
-    toOutput (outId, output) = (outputIdText outId, drv)
-      where
-        drv = DerivationOutput
-          { path = error "FIXME: precalculate path of the output before the derivation"
-          , hashAlgo = case output of
-              FixedHashOutput _ -> "sha256"
-              _                 -> ""
-          , hash = case output of
-              FixedHashOutput sha -> sha256Text sha
-              _                   -> ""
-          }
 
 getInputDrvs :: HasCallStack => PackageDeps -> Map F.FilePath (Set Text)
 getInputDrvs = M.fromList . fmap go . M.toList
@@ -229,5 +230,3 @@ getInputDrvs = M.fromList . fmap go . M.toList
 
 getInputSrcs :: HasCallStack => SrcDeps  -> Set F.FilePath
 getInputSrcs = S.fromList . fmap (view _Path) . S.toList
-
---  LocalWords:  packageDeps srcDeps env
