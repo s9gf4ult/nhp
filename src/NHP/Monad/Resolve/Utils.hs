@@ -11,7 +11,6 @@ import           NHP.Imports
 import           NHP.Monad.Derivation
 import           NHP.Monad.Types
 import           NHP.Script
-import           NHP.State
 import           NHP.Types
 import           Prelude                 as P
 
@@ -83,7 +82,7 @@ withPackage bucket ppoint ma = do
     modify $ field @"stack" %~ ((currentPackage ppoint scope) :)
     ma drv
   modify $ field @"cache" .~ (newS ^. field @"cache")
-  -- Prevent the cache from loosing
+  -- Prevent the cac he from loosing
   return a
 
 -- | Check that there is no recursion in the package stack.
@@ -216,8 +215,7 @@ derivePackage bucket ppoint = withPackage (bucket ^. field @"packages") ppoint $
       , derivation     = derivation
       , derivationPath = drvPath
       , packageDeps    = pkgDeps
-      , srcDeps        = srcDeps
-      }
+      , srcDeps        = srcDeps }
   return package
 
 getInputDrvs :: HasCallStack => PackageDeps -> Map F.FilePath (Set Text)

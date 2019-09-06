@@ -35,3 +35,4 @@ data OutputExistsError = OutputExistsError
 
 data BucketError
   = PackageAlreadyAdded PackageId
+  | PackageAbsent PackageId

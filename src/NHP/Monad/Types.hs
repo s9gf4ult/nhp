@@ -4,6 +4,7 @@ module NHP.Monad.Types
   ) where
 
 import           Control.Monad.Trans.RWS.Strict
+import           Data.Map.Strict                as M
 import           Filesystem.Path                as F
 import           NHP.Imports
 import           NHP.Monad.Types.Error
@@ -35,8 +36,11 @@ newtype BucketM f a = BucketM
   , MonadState (BucketState f), MonadError (WithCallStack BucketError))
 
 data BucketState f = BucketState
-  { bucket :: Map PackageId (DerivationM f ())
+  { bucket :: BucketMap f
   } deriving (Generic)
+
+emptyBucketState :: BucketState f
+emptyBucketState = BucketState M.empty
 
 data DrvMethods f = DrvMethods
   { _evalPackageOutput :: HasCallStack => PackageId -> OutputId -> ResolveM f Path
