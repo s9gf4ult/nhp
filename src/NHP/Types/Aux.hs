@@ -67,6 +67,9 @@ newtype PackageId = PackageId
 newtype PackagePoint = PackagePoint (NonEmpty PackageId)
   deriving (Eq, Ord)
 
+packagePoint :: PackageId -> PackagePoint
+packagePoint = PackagePoint . pure
+
 ppAddInner :: PackageId -> [PackageId] -> PackagePoint
 ppAddInner ppid ppids = PackagePoint $ ppid :| ppids
 

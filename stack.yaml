@@ -1,6 +1,7 @@
 nix:
   packages:
     - "haskellPackages.autoexporter"
+    - "haskellPackages.tasty-discover"
 
 resolver: lts-13.30
 

@@ -174,6 +174,13 @@ drvMethods bucket = DrvMethods
   , _failDerivation = throwWithStack . DerivationFailed
   }
 
+derivePackageId
+  :: (Monad f, HasCallStack)
+  => PackageBucket f
+  -> PackageId
+  -> ResolveM f Package
+derivePackageId bucket pkgId = derivePackage bucket (packagePoint pkgId)
+
 derivePackage
   :: (Monad f, HasCallStack)
   => PackageBucket f
