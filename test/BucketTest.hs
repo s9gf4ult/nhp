@@ -1,10 +1,12 @@
 module BucketTest (unit_DeriveEmpty) where
 
+import           NHP.Imports
+import           NHP.Monad
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
-emptyBucket :: PackageBucket Identity
-emptyBucket = error "FIXME: emptyBucket not implemented"
+emptpyBucket :: PackageBucket Identity
+emptyBucket = runBucketM
 
 unit_DeriveEmpty :: IO ()
 unit_DeriveEmpty = error "FIXME: unit_DeriveEmpty not implemented"

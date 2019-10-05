@@ -35,6 +35,19 @@ newtype BucketM f a = BucketM
   ( Functor, Applicative, Monad
   , MonadState (BucketState f), MonadError (WithCallStack BucketError))
 
+runBucketM
+  :: BucketState f
+  -> BucketM f a
+  -> Either (WithCallStack BucketError) (BucketMap f, a)
+runBucketM bs (BucketM ma) =
+  let (ea, s, _w) = runRWS (runExceptT ma) () bs
+  in (s ^. field @"bucket",) <$> ea
+
+newBucket
+  :: BucketM f a
+  -> Either (WithCallStack BucketError) (BucketMap f, a)
+newBucket = runBucketM emptyBucketState
+
 data BucketState f = BucketState
   { bucket :: BucketMap f
   } deriving (Generic)

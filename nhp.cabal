@@ -34,6 +34,7 @@ library
                      , RankNTypes
                      , ScopedTypeVariables
                      , StandaloneDeriving
+                     , TupleSections
                      , TypeApplications
   exposed-modules:  NHP.Error
                   , NHP.Imports
