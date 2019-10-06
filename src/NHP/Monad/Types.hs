@@ -1,6 +1,7 @@
 module NHP.Monad.Types
   ( module NHP.Monad.Types
   , module NHP.Monad.Types.Error
+  , module NHP.Monad.Types.NixBackend
   ) where
 
 import           Control.Monad.Trans.RWS.Strict
@@ -8,6 +9,7 @@ import           Data.Map.Strict                as M
 import           Filesystem.Path                as F
 import           NHP.Imports
 import           NHP.Monad.Types.Error
+import           NHP.Monad.Types.NixBackend
 import           NHP.Script
 import           NHP.Types
 
@@ -28,6 +30,15 @@ newtype ResolveM f a = ResolveM
   ( Functor, Applicative, Monad, MonadError (WithCallStack ResolveError)
   , MonadState ResolveState, MonadReader (NixBackend f) )
 
+runResolveM
+  :: (Monad f, HasCallStack)
+  => NixBackend f
+  -> (HasCallStack => ResolveM f a)
+  -> f (Either (WithCallStack ResolveError) a)
+runResolveM backend (ResolveM ma) = do
+  (a, _s, _w) <- runRWST (runExceptT ma) backend newResolveState
+  return a
+
 -- | The bucket generation monad
 newtype BucketM f a = BucketM
   { unBucketM :: ExceptT (WithCallStack BucketError) (RWS () () (BucketState f)) a
@@ -35,18 +46,25 @@ newtype BucketM f a = BucketM
   ( Functor, Applicative, Monad
   , MonadState (BucketState f), MonadError (WithCallStack BucketError))
 
+type Bucket = forall f. Monad f => BucketM f ()
+
 runBucketM
-  :: BucketState f
-  -> BucketM f a
+  :: HasCallStack
+  => BucketState f
+  -> (HasCallStack => BucketM f a)
   -> Either (WithCallStack BucketError) (BucketMap f, a)
 runBucketM bs (BucketM ma) =
   let (ea, s, _w) = runRWS (runExceptT ma) () bs
   in (s ^. field @"bucket",) <$> ea
 
-newBucket
-  :: BucketM f a
-  -> Either (WithCallStack BucketError) (BucketMap f, a)
-newBucket = runBucketM emptyBucketState
+newBucketM
+  :: HasCallStack
+  => Platform
+  -- ^ Default platform
+  -> (HasCallStack => BucketM f a)
+  -> Either (WithCallStack BucketError) (PackageBucket f, a)
+newBucketM platform ma = over (_Right . _1) (PackageBucket platform)
+  $ runBucketM emptyBucketState ma
 
 data BucketState f = BucketState
   { bucket :: BucketMap f
@@ -91,10 +109,10 @@ data BucketElement f
   -- ^ Closure with main derivation and scope
 
 data PackageBucket f = PackageBucket
-  { packages :: BucketMap f
-  , platform :: Platform
+  { platform :: Platform
   -- ^ Default platform for all packages in the bucket. (If platform
   -- is not specified by the derivation)
+  , packages :: BucketMap f
   } deriving (Generic)
 
 deriving instance (Monad f) => MonadReader (DrvMethods f) (DerivationM f)
@@ -108,6 +126,9 @@ data ResolveState = ResolveState
   , stack :: [CurrentPackage]
   } deriving (Generic)
 
+newResolveState :: ResolveState
+newResolveState = ResolveState mempty mempty
+
 type Scope = PackageId -> Maybe PackagePoint
 
 data CurrentPackage = CurrentPackage
@@ -116,21 +137,6 @@ data CurrentPackage = CurrentPackage
   , packageDeps :: PackageDeps
   , srcDeps     :: SrcDeps
   } deriving (Generic)
-
--- | The nix-store backend
-data NixBackend f = NixBackend
-  { _storeAdd       :: HasCallStack => F.FilePath -> f Path
-  -- ^ Store derivation or other path in the Nix store
-  , _storeAddBinary :: HasCallStack => ByteString -> f Path
-  -- ^ Store binary data in the store and return the path
-  , _evalOutputPath
-    :: HasCallStack
-    => Derivation
-    -- ^ Derivation with empty outputs
-    -> OutputId
-    -> Output
-    -> f DerivationOutput
-  }
 
 instance MonadTrans ResolveM where
   lift ma = ResolveM $ lift $ lift ma

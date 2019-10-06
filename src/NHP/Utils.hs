@@ -22,12 +22,12 @@ simpleCallBin pkgId args = do
 within :: Exp Path -> DerivationM f a -> DerivationM f a
 within = error "FIXME: within not implemented"
 
--- | Fetch fixed hash derivation. The path is known at eval state.
-fetchUrl :: (Monad f, HasCallStack) => Url -> Sha256 -> DerivationM f Path
-fetchUrl url sha = do
-  outs <- evalDerivation (deriveFetchUrl url sha) [def]
-  maybe (failDerivation $ NoOutputFound def) return
-    $ outs ^? ix def
+-- -- | Fetch fixed hash derivation. The path is known at eval state.
+-- fetchUrl :: (Monad f, HasCallStack) => Url -> Sha256 -> DerivationM f Path
+-- fetchUrl url sha = do
+--   outs <- evalDerivation (deriveFetchUrl url sha) [def]
+--   maybe (failDerivation $ NoOutputFound def) return
+--     $ outs ^? ix def
 
 deriveFetchUrl :: (Monad f) => Url -> Sha256 -> DerivationM f ()
 deriveFetchUrl url sha = do

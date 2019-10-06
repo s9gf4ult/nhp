@@ -5,15 +5,6 @@ import           NHP.Imports
 import           NHP.Monad.Types
 import           NHP.Types
 
-
-evalDerivation
-  :: (Monad f, HasCallStack)
-  => DerivationM f ()
-  -> [OutputId]
-  -> DerivationM f (Map OutputId Path)
-evalDerivation = error
-  "FIXME: every derivation must have id, so this thing must be removed"
-
 -- | Set dependency on given package
 evalPackageOutput
   :: (Monad f, HasCallStack)

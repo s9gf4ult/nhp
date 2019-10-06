@@ -1,17 +1,29 @@
-module BucketTest (unit_DeriveEmpty) where
+module BucketTest where
 
 import           NHP.Imports
 import           NHP.Monad
+import           NHP.Types
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
-emptpyBucket :: PackageBucket Identity
-emptyBucket = runBucketM
+aPackage :: Bucket
+aPackage = newPackage "a" $ do
+  void $ defaultOutput
 
-unit_DeriveEmpty :: IO ()
-unit_DeriveEmpty = error "FIXME: unit_DeriveEmpty not implemented"
+bPackage :: Bucket
+bPackage = newPackage "b" $ do
+  void $ evalPackageOutput "a" def
 
--- unit_ResolveExpectations :: IO ()
--- unit_ResolveExpectations = do
---   let
---     pkg = derivePackageId ""
+unit_AB :: HasCallStack => IO ()
+unit_AB = do
+  let
+    Right (bucket, ()) = newBucketM platformX86_64_linux $ do
+      aPackage
+      bPackage
+  r <- runResolveM fakeNix $ (,)
+    <$> derivePackageId bucket "a"
+    <*> derivePackageId bucket "b"
+  case r of
+    Right (a, b) ->
+      assertBool "Not equal" $ a /= b
+    Left e -> assertString $ show e

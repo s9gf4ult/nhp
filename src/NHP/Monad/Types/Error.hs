@@ -12,7 +12,7 @@ data ResolveError
   | CircularDependencies [PackagePoint]
   | PackageStackIsEmpty
   | EvalAssertionFailed Text
-  deriving (Ord, Eq, Generic)
+  deriving (Ord, Eq, Generic, Show)
 
 data DerivationError
   = PlatformNotSupported Text
@@ -24,14 +24,14 @@ data DerivationError
   | NoOutputFound OutputId
   | SomeFail Text
   -- ^ Eval time failure
-  deriving (Ord, Eq, Generic)
+  deriving (Ord, Eq, Generic, Show)
 
 -- | Multiple output declarations.
 data OutputExistsError = OutputExistsError
   { outputId  :: OutputId
   , oldOutput :: Output
   , newOutput :: Output
-  } deriving (Eq, Ord, Generic)
+  } deriving (Eq, Ord, Generic, Show)
 
 data BucketError
   = PackageAlreadyAdded PackageId

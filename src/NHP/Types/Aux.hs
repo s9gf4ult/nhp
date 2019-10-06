@@ -27,7 +27,7 @@ urlText :: Url -> Text
 urlText = error "FIXME: urlText not implemented"
 
 data Sha256 = Sha256 ByteString
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 sha256Text :: Sha256 -> Text
 sha256Text = error "FIXME: sha256Text not implemented"
@@ -40,7 +40,7 @@ instance Default OutputId where
   def = "out"
 
 data Output = SimpleOutput | FixedHashOutput Sha256
-  deriving (Ord, Eq)
+  deriving (Ord, Eq, Show)
 
 newtype OutputPath = OutputPath
   { unOutputPath :: Text
@@ -65,7 +65,7 @@ newtype PackageId = PackageId
 -- package. So the last element is the first in terms of searching
 -- package. The head is the most inner name of the package
 newtype PackagePoint = PackagePoint (NonEmpty PackageId)
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 packagePoint :: PackageId -> PackagePoint
 packagePoint = PackagePoint . pure
