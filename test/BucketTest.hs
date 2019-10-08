@@ -6,18 +6,22 @@ import           NHP.Types
 import           Test.Tasty
 import           Test.Tasty.HUnit
 
-aPackage :: Bucket
-aPackage = newPackage "a" $ do
-  void $ defaultOutput
+base, aPackage, bPackage :: Monad f => Bucket f
+base = do
+  newPackage "bash" $ do
+    void defaultOutput
 
-bPackage :: Bucket
+aPackage = newPackage "a" $ do
+  void defaultOutput
+
 bPackage = newPackage "b" $ do
   void $ evalPackageOutput "a" def
 
 unit_AB :: HasCallStack => IO ()
 unit_AB = do
   let
-    Right (bucket, ()) = newBucketM platformX86_64_linux $ do
+    Right bucket = newBucketM platformX86_64_linux $ do
+      base
       aPackage
       bPackage
   r <- runResolveM fakeNix $ (,)

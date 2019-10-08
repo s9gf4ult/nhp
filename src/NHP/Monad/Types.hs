@@ -46,7 +46,7 @@ newtype BucketM f a = BucketM
   ( Functor, Applicative, Monad
   , MonadState (BucketState f), MonadError (WithCallStack BucketError))
 
-type Bucket = forall f. Monad f => BucketM f ()
+type Bucket f = BucketM f ()
 
 runBucketM
   :: HasCallStack
@@ -61,9 +61,9 @@ newBucketM
   :: HasCallStack
   => Platform
   -- ^ Default platform
-  -> (HasCallStack => BucketM f a)
-  -> Either (WithCallStack BucketError) (PackageBucket f, a)
-newBucketM platform ma = over (_Right . _1) (PackageBucket platform)
+  -> (HasCallStack => Bucket f)
+  -> Either (WithCallStack BucketError) (PackageBucket f)
+newBucketM platform ma = over _Right (PackageBucket platform . fst)
   $ runBucketM emptyBucketState ma
 
 data BucketState f = BucketState
