@@ -48,6 +48,7 @@ library
                   , NHP.Monad.Types
                   , NHP.Monad.Types.Error
                   , NHP.Monad.Types.NixBackend
+                  , NHP.Monad.Types.Script
                   , NHP.PackageImports
                   , NHP.Packages
                   , NHP.Packages.Hello

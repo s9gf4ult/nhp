@@ -30,4 +30,4 @@ unit_AB = do
   case r of
     Right (a, b) ->
       assertBool "Not equal" $ a /= b
-    Left e -> assertString $ show e
+    Left e -> assertBool (show e) False

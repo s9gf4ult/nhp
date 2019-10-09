@@ -17,8 +17,8 @@ import           NHP.Types
 -- 'MonadState' for it to prevent the abuse of these interfaces, which
 -- are too generic. The set of low-level methods must be consitent and
 -- minimal. Also it must protect us from generating wrong derivations.
-newtype DerivationM f a = DerivationM
-  { unDerivation :: RWST (DrvMethods f) () DrvResult (ResolveM f) a
+newtype DerivationM script f a = DerivationM
+  { unDerivation :: RWST (DrvMethods f) () (DrvResult script) (ResolveM f) a
   } deriving
   ( Functor, Applicative, Monad )
 
@@ -89,8 +89,8 @@ data DrvMethods f = DrvMethods
   -- ^ Fail the derivation with message.
   }
 
-data DrvResult = DrvResult
-  { script   :: Script
+data DrvResult script = DrvResult
+  { script   :: script
   -- ^ Building script
   , outputs  :: Map OutputId Output
   -- ^ Outputs of the derivation.
