@@ -242,3 +242,8 @@ language_extensions:
   - StandaloneDeriving
   - TemplateHaskell
   - TypeApplications
+  - ConstraintKinds
+  - PartialTypeSignatures
+  - ScopedTypeVariables
+  - TupleSections
+  - TypeApplications

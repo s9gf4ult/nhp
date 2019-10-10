@@ -19,6 +19,7 @@ library
   default-language:    Haskell2010
   ghc-options:        -Wall -fno-warn-name-shadowing
   default-extensions:  Arrows
+                     , ConstraintKinds
                      , DataKinds
                      , DeriveFunctor
                      , DeriveGeneric
@@ -48,7 +49,6 @@ library
                   , NHP.Monad.Types
                   , NHP.Monad.Types.Error
                   , NHP.Monad.Types.NixBackend
-                  , NHP.Monad.Types.Script
                   , NHP.PackageImports
                   , NHP.Packages
                   , NHP.Packages.Hello

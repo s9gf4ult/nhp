@@ -1,15 +1,72 @@
 module NHP.Script where
 
 import           Data.String
-import           Data.Text   as T
+import qualified Data.Text               as TS
+import qualified Data.Text.Lazy          as T
+import           Data.Text.Lazy.Encoding as T
+import           NHP.Imports
 import           NHP.Types
 
+data Bash = Bash Text
+
 -- | Script in Lua (or Bash?)
-data Script
+data Script script = Script
+  { scriptRunner :: script -> ScriptResult
+  -- ^ Final script runner. Here to be able to replace the function in
+  -- the end.
+  , script       :: script
+  -- ^ The script
+  } deriving (Generic)
 
-instance Semigroup Script
+runScript :: Script script -> ScriptResult
+runScript (Script runner script) = runner script
 
-instance Monoid Script
+instance Default (Script ()) where
+  def = Script
+    { scriptRunner = \() -> ScriptResult
+      { builder = BuiltinBuilder "noop"
+      , script  = Nothing
+      , args    = const mempty
+      }
+    , script = ()
+    }
+
+instance Default (Script Bash) where
+  def = Script
+    { scriptRunner = \(Bash script) -> ScriptResult
+      { builder = ExecutableBuilder bashExecutable
+      , script  = Just $ T.encodeUtf8 script
+      , args    = error "NOT Implemented"
+      }
+    , script = Bash mempty
+    }
+
+type DefScript script = Default (Script script)
+
+data Builder
+  = BuiltinBuilder Text
+  | ExecutableBuilder PackageFile
+
+data ScriptResult = ScriptResult
+  { builder :: Builder
+  -- ^ The interpreter to run the script
+  , script  :: Maybe ByteString
+  -- ^ The raw generated script
+  , args    :: Maybe Path -> Vector TS.Text
+  -- ^ Generate the arguments for the interpreter Using the path of
+  -- the script
+  }
+
+bashExecutable :: PackageFile
+bashExecutable = PackageFile
+  { package = "bash"
+  , output = def
+  , path = "/bin/bash"
+  }
+
+-- instance Semigroup Script
+
+-- instance Monoid Script
 
 -- | Expression returning some @a@ in a script language
 data Exp a
@@ -31,9 +88,3 @@ toTextExp = error "FIXME: toTextExp not implemented"
 
 bashInterpreter :: PackageFile
 bashInterpreter = PackageFile "bash" "out" "/bin/bash"
-
-runScript :: Script -> ScriptResult
-runScript script = ScriptResult
-  { interpreter = bashInterpreter
-  , script      = (error "FIXME: not implemented")
-  }

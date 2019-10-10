@@ -9,16 +9,20 @@ import           NHP.Script
 import           NHP.Types
 
 
-appendScript :: (Monad f) => Script -> DerivationM f ()
-appendScript s = DerivationM $ do
-  modify $ field @"script" %~ (<> s)
+-- appendScript :: (Monad f) => Script -> DerivationM f ()
+-- appendScript s = DerivationM $ do
+--   modify $ field @"script" %~ (<> s)
 
-prependScript :: (Monad f) => Script -> DerivationM f ()
-prependScript s = DerivationM $ do
-  modify $ field @"script" %~ (s <>)
+-- prependScript :: (Monad f) => Script -> DerivationM f ()
+-- prependScript s = DerivationM $ do
+--   modify $ field @"script" %~ (s <>)
 
 -- | Sets output.
-setOutput :: (Monad f, HasCallStack) => OutputId -> Output -> DerivationM f (Exp Path)
+setOutput
+  :: (Monad f, HasCallStack)
+  => OutputId
+  -> Output
+  -> DerivationM script f (Exp Path)
 setOutput oid output = DerivationM $ do
   preuse (field @"outputs" . ix oid) >>= \case
     Nothing -> do
@@ -31,37 +35,52 @@ setOutput oid output = DerivationM $ do
           lift $ f $ OutputAlreadyExists
             $ OutputExistsError oid oldOid output
 
-defaultOutput :: (Monad f, HasCallStack) => DerivationM f (Exp Path)
+defaultOutput
+  :: (Monad f, HasCallStack)
+  => DerivationM script f (Exp Path)
 defaultOutput = setOutput def SimpleOutput
 
-setLicense :: (Monad f) => Maybe License -> DerivationM f ()
+setLicense
+  :: (Monad f)
+  => Maybe License
+  -> DerivationM script f ()
 setLicense license = DerivationM $ do
   modify $ field @"license" .~ license
 
-listenScript :: (Monad f) => DerivationM f a -> DerivationM f (a, Script)
+listenScript
+  :: (Monad f, DefScript script)
+  => DerivationM script f a
+  -> DerivationM script f (a, Script script)
 listenScript ma = do
   oldS <- DerivationM $ use (field @"script")
-    <* modify (field @"script" .~ mempty)
+    <* modify (field @"script" .~ def)
   a <- ma -- Modify the empty script
   maScript <- DerivationM $ use (field @"script")
     <* modify (field @"script" .~ oldS)
   return (a, maScript)
 
-packageFile :: (Monad f, HasCallStack) => PackageFile -> DerivationM f Path
+packageFile
+  :: (Monad f, HasCallStack)
+  => PackageFile
+  -> DerivationM script f Path
 packageFile (PackageFile pkgId out path) = do
   outPath <- evalPackageOutput pkgId out
   return $ outPath </> path
 
-emptyResult :: DrvResult
+emptyResult :: DefScript script => DrvResult script
 emptyResult = DrvResult
-  { script   =  mempty
+  { script   = def
   , outputs  = mempty
   , license  = Nothing
   , platform = Nothing
   , env      = mempty
   }
 
-runDerivationM :: Monad f => DrvMethods f -> DerivationM f a -> ResolveM f (a, DrvResult)
+runDerivationM
+  :: (DefScript script, Monad f)
+  => DrvMethods f
+  -> DerivationM script f a
+  -> ResolveM f (a, DrvResult script)
 runDerivationM backend drv = dropTup <$> runRWST (unDerivation drv) backend emptyResult
   where
     dropTup (a, b, _) = (a, b)

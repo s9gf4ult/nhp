@@ -16,7 +16,7 @@ import           Data.Map.Strict              as X (Map)
 import           Data.Maybe                   as X
 import           Data.Set                     as X (Set)
 import           Data.String                  as X
-import           Data.Text                    as X (Text)
+import           Data.Text.Lazy               as X (Text)
 import           Data.Traversable             as X
 import           Data.Vector                  as X (Vector)
 import           GHC.Generics                 as X (Generic)

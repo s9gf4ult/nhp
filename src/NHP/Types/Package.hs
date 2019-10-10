@@ -16,4 +16,4 @@ data Package = Package
   , derivationPath :: Path
   , packageDeps    :: PackageDeps
   , srcDeps        :: SrcDeps
-  } deriving (Eq, Ord, Generic)
+  } deriving (Eq, Ord, Show, Generic)

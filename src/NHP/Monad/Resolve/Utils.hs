@@ -3,6 +3,8 @@ module NHP.Monad.Resolve.Utils where
 import           Data.List.NonEmpty      as NE
 import           Data.Map.Strict         as M
 import           Data.Set                as S
+import           Data.Text               as TS
+import           Data.Text.Lazy          as T
 import           Data.Text.Lazy.Builder  as TB
 import           Data.Text.Lazy.Encoding as TE
 import           Filesystem.Path         as F
@@ -74,7 +76,7 @@ withPackage
   :: (Monad f, HasCallStack)
   => BucketMap f
   -> PackagePoint
-  -> (DerivationM f () -> ResolveM f a)
+  -> (SomeDerivation f () -> ResolveM f a)
   -> ResolveM f a
 withPackage bucket ppoint ma = do
   (a, newS) <- listenState $ do
@@ -99,12 +101,12 @@ checkNoRecursion = do
 -- closures met in the pass. Returns the scope of derivation and
 -- derivation itself.
 lookupPackagePoint
-  :: forall f
+  :: forall f script
   . (Monad f, HasCallStack)
   => BucketMap f
   -> PackagePoint
   -- ^ Point to find the derivation at
-  -> ResolveM f (Scope, DerivationM f ())
+  -> ResolveM f (Scope, SomeDerivation f ())
 lookupPackagePoint bucket ppoint =
   go [] (const Nothing) bucket (ppDirectPath ppoint)
   where
@@ -117,7 +119,7 @@ lookupPackagePoint bucket ppoint =
       -- ^ Current closure map
       -> NonEmpty PackageId
       -- ^ Reversed pp. The head is the most top level name
-      -> ResolveM f (Scope, DerivationM f ())
+      -> ResolveM f (Scope, SomeDerivation f ())
     go breadCrumbs topScope topMap (name :| rest) = do
       let
         curPoint = ppAddInner name breadCrumbs
@@ -126,7 +128,7 @@ lookupPackagePoint bucket ppoint =
         Nothing  -> throwWithStack $ NoPackageFound curPoint
         Just elt -> case rest of
           [] -> case elt of
-            BucketDerivation drv        -> return (retScope, drv)
+            BucketDerivation drv         -> return (retScope, drv)
             BucketClosure drv closureMap -> return
               ( mkScope (name : breadCrumbs) retScope closureMap
               , drv )
@@ -154,7 +156,7 @@ drvMethods bucket = DrvMethods
               modify $ field @"cache" %~ (M.insert ppoint pkg)
               return pkg
             Just pkg -> return pkg
-          case pkg ^? field @"derivation" . field @"outputs" . ix (outputIdText output) of
+          case pkg ^? field @"derivation" . field @"outputs" . ix (T.toStrict $ outputIdText output) of
             Nothing  -> throwWithStack $ NoPackageOutput pkgId output
             Just out -> do
               let newCP = cp & field @"packageDeps"
@@ -186,13 +188,15 @@ derivePackage
   => PackageBucket f
   -> PackagePoint
   -> ResolveM f Package
-derivePackage bucket ppoint = withPackage (bucket ^. field @"packages") ppoint $ \drvM -> do
+derivePackage bucket ppoint = withPackage (bucket ^. field @"packages") ppoint $ \(SomeDerivation drvM) -> do
   checkNoRecursion
-  ((builderPath, builderArgs), result) <- runDerivationM (drvMethods bucket) $ do
+  ((builderText, builderArgs), result) <- runDerivationM (drvMethods bucket) $ do
     ((), script) <- listenScript drvM
     let ScriptResult interp scriptBin genArgs = runScript script
-    builder <- packageFile interp
-    scriptPath <- storeBinary scriptBin
+    builder <- case interp of
+      BuiltinBuilder t    -> return t
+      ExecutableBuilder p -> pathText <$> packageFile p
+    scriptPath <- traverse storeBinary scriptBin
     return (builder, genArgs scriptPath)
   cp <- stackHead
   let
@@ -205,13 +209,13 @@ derivePackage bucket ppoint = withPackage (bucket ^. field @"packages") ppoint $
       , inputSrcs = getInputSrcs srcDeps
       , platform  = maybe defaultPlatform platformText
         $ result ^. field @"platform"
-      , builder   = pathText builderPath
+      , builder   = T.toStrict builderText
       , args      = builderArgs
       , env       = result ^. field @"env"
       }
   outputs <- for (result ^. field @"outputs". to M.toList) $ \(outId, out) -> do
     path <- nixStoreEvalOutputPath preDerivation outId out
-    return (outputIdText outId, path)
+    return (T.toStrict $ outputIdText outId, path)
   let
     derivation = preDerivation & field @"outputs" .~ M.fromList outputs
     derivationBinary = encodeUtf8 $ toLazyText $ buildDerivation derivation
@@ -225,13 +229,15 @@ derivePackage bucket ppoint = withPackage (bucket ^. field @"packages") ppoint $
       , srcDeps        = srcDeps }
   return package
 
-getInputDrvs :: HasCallStack => PackageDeps -> Map F.FilePath (Set Text)
+getInputDrvs :: HasCallStack => PackageDeps -> Map F.FilePath (Set TS.Text)
 getInputDrvs = M.fromList . fmap go . M.toList
   where
-    go :: (Package, Set OutputId) -> (F.FilePath, Set Text)
-    go (pkg, outs) = (pkg ^. field @"derivationPath" . _Path, outPaths)
+    go :: (Package, Set OutputId) -> (F.FilePath, Set TS.Text)
+    go (pkg, outs) =
+      ( pkg ^. field @"derivationPath" . _Path
+      , outPaths)
       where
-        outPaths = S.fromList $ fmap outputIdText $ S.toList outs
+        outPaths = S.fromList $ fmap (T.toStrict . outputIdText) $ S.toList outs
 
 getInputSrcs :: HasCallStack => SrcDeps  -> Set F.FilePath
 getInputSrcs = S.fromList . fmap (view _Path) . S.toList

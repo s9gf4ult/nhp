@@ -1,6 +1,7 @@
 module NHP.Types.Aux where
 
 import           Data.List.NonEmpty as NE
+import qualified Data.Text          as TS
 import           Filesystem.Path
 import           NHP.Imports
 import           Prelude            hiding (FilePath)
@@ -48,7 +49,7 @@ newtype OutputPath = OutputPath
 
 -- | TODO: make ADT for platform to generate only valid platform strings
 newtype Platform = Platform
-  { platformText :: Text
+  { platformText :: TS.Text
   } deriving (Eq)
 
 platformX86_64_linux :: Platform

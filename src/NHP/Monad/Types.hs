@@ -6,6 +6,7 @@ module NHP.Monad.Types
 
 import           Control.Monad.Trans.RWS.Strict
 import           Data.Map.Strict                as M
+import           Data.Text                      as T
 import           Filesystem.Path                as F
 import           NHP.Imports
 import           NHP.Monad.Types.Error
@@ -90,22 +91,30 @@ data DrvMethods f = DrvMethods
   }
 
 data DrvResult script = DrvResult
-  { script   :: script
+  { script   :: Script script
   -- ^ Building script
   , outputs  :: Map OutputId Output
   -- ^ Outputs of the derivation.
   , license  :: Maybe License
   , platform :: Maybe Platform
-  , env      :: Map Text Text
+  , env      :: Map T.Text T.Text
   } deriving (Generic)
 
+noopScript :: (Monad f) => DerivationM () f ()
+noopScript = return ()
 
 type BucketMap f = Map PackageId (BucketElement f)
 
+data SomeDerivation f a where
+  SomeDerivation
+    :: forall script f a. (DefScript script)
+    => DerivationM script f a
+    -> SomeDerivation f a
+
 data BucketElement f
-  = BucketDerivation (DerivationM f ())
+  = BucketDerivation (SomeDerivation f ())
   -- ^ Just2 a derivation
-  | BucketClosure (DerivationM f ()) (BucketMap f)
+  | BucketClosure (SomeDerivation f ()) (BucketMap f)
   -- ^ Closure with main derivation and scope
 
 data PackageBucket f = PackageBucket
@@ -115,9 +124,9 @@ data PackageBucket f = PackageBucket
   , packages :: BucketMap f
   } deriving (Generic)
 
-deriving instance (Monad f) => MonadReader (DrvMethods f) (DerivationM f)
+deriving instance (Monad f) => MonadReader (DrvMethods f) (DerivationM script f)
 
-instance MonadTrans DerivationM where
+instance MonadTrans (DerivationM script)  where
   lift ma = DerivationM $ lift $ lift ma
 
 data ResolveState = ResolveState

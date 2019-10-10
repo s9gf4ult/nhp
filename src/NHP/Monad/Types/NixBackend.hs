@@ -1,7 +1,7 @@
 module NHP.Monad.Types.NixBackend where
 
 import           Control.Monad.Random
-import qualified Data.Text                 as T
+import qualified Data.Text.Lazy            as T
 import           Filesystem.Path           as F
 import           Filesystem.Path.CurrentOS as F
 import           NHP.Imports
@@ -22,6 +22,8 @@ data NixBackend f = NixBackend
     -> f DerivationOutput
   }
 
+fpFromText :: Text -> F.FilePath
+fpFromText = F.fromText . T.toStrict
 
 fakeNix :: NixBackend IO
 fakeNix =
@@ -33,7 +35,7 @@ fakeNix =
     rndPath :: IO F.FilePath
     rndPath = do
       r <- rndText
-      let p = F.fromText "/nix/store/" F.</> F.fromText r
+      let p = fpFromText "/nix/store/" F.</> fpFromText r
       return p
     storeAdd _fp = Path <$> rndText
     storeBin _bin = Path <$> rndText
@@ -44,5 +46,5 @@ fakeNix =
       FixedHashOutput _sha -> do
         p <- rndPath
         r <- rndText
-        return $ DerivationOutput p "SHA256" r
+        return $ DerivationOutput p "SHA256" (T.toStrict r)
   in NixBackend storeAdd storeBin evalOut

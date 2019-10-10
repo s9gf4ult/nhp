@@ -10,22 +10,22 @@ evalPackageOutput
   :: (Monad f, HasCallStack)
   => PackageId
   -> OutputId
-  -> DerivationM f Path
+  -> DerivationM script f Path
 evalPackageOutput pkgid output = do
   g <- asks _evalPackageOutput
   DerivationM $ lift $ g pkgid output
 
-failDerivation :: (Monad f, HasCallStack) => DerivationError -> DerivationM f a
+failDerivation :: (Monad f, HasCallStack) => DerivationError -> DerivationM script f a
 failDerivation t = do
   f <- asks _failDerivation
   DerivationM $ lift $ f t
 
-storePath :: (Monad f, HasCallStack) => F.FilePath -> DerivationM f Path
+storePath :: (Monad f, HasCallStack) => F.FilePath -> DerivationM script f Path
 storePath fp = do
   s <- asks _storePath
   DerivationM $ lift $ s fp
 
-storeBinary :: (Monad f, HasCallStack) => ByteString -> DerivationM f Path
+storeBinary :: (Monad f, HasCallStack) => ByteString -> DerivationM script f Path
 storeBinary bs = do
   s <- asks _storeBinary
   DerivationM $ lift $ s bs
