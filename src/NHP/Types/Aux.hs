@@ -1,17 +1,26 @@
 module NHP.Types.Aux where
 
-import           Data.List.NonEmpty as NE
-import qualified Data.Text          as TS
+import           Data.List.NonEmpty        as NE
+import qualified Data.Text                 as TS
+import qualified Data.Text.Lazy            as T
 import           Filesystem.Path
+import           Filesystem.Path.CurrentOS
 import           NHP.Imports
-import           Prelude            hiding (FilePath)
+import           Prelude                   hiding (FilePath)
 
 newtype Path = Path
   { pathText :: Text
   } deriving (Show, Eq, Ord, IsString)
 
 _Path :: Prism' Path FilePath
-_Path = error "FIXME: _Path not implemented"
+_Path = prism' b f
+  where
+    b = Path . T.fromStrict . either id id . toText
+    f (Path p) =
+      let res = fromText $ T.toStrict p
+      in case valid res of
+        False -> Nothing
+        True  -> Just res
 
 _PathText :: Prism' Text Path
 _PathText = error "FIXME: _PathText not implemented"

@@ -99,7 +99,9 @@ test-suite test
                      , TupleSections
                      , TypeApplications
   build-depends:    base >= 4.10 && <4.13
+                  , containers
                   , nhp
+                  , pretty-show
                   , tasty
                   , tasty-hunit
   other-modules: BucketTest
