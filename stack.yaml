@@ -8,3 +8,4 @@ resolver: lts-13.30
 extra-deps:
   - nix-derivation-1.0.2
   - autoexporter-1.1.14
+  - shell-monad-0.6.8

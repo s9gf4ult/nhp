@@ -18,6 +18,13 @@ packages:
       sha256: da37a3a32327a64e81843fe7afcc6d2d5d99a5d88f03b5ab35079a84a1cde53a
   original:
     hackage: autoexporter-1.1.14
+- completed:
+    hackage: shell-monad-0.6.8@sha256:43cd6a4d601abd0798fb902d4e4b8139602f158237c60035879245a2e86d43f2,783
+    pantry-tree:
+      size: 610
+      sha256: 764cf4b73cd671459d66630e522bbf1c2880ade038ff310f933a4bf192d84573
+  original:
+    hackage: shell-monad-0.6.8
 snapshots:
 - completed:
     size: 500539
