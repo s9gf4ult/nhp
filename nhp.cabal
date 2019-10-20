@@ -28,22 +28,26 @@ library
                      , FlexibleInstances
                      , GADTs
                      , GeneralizedNewtypeDeriving
+                     , KindSignatures
                      , LambdaCase
                      , MultiParamTypeClasses
                      , OverloadedStrings
+                     , FunctionalDependencies
                      , PartialTypeSignatures
                      , RankNTypes
                      , ScopedTypeVariables
                      , StandaloneDeriving
                      , TupleSections
                      , TypeApplications
-  exposed-modules:  NHP.Error
+  exposed-modules:  Control.Monad.Reader.Call
+                  , NHP.Error
                   , NHP.Imports
                   , NHP.Monad
                   , NHP.Monad.Bucket
                   , NHP.Monad.Derivation
                   , NHP.Monad.Derivation.Backend
                   , NHP.Monad.Derivation.DrvResult
+                  , NHP.Monad.Derivation.Type
                   , NHP.Monad.Resolve
                   , NHP.Monad.Resolve.Utils
                   , NHP.Monad.Types
