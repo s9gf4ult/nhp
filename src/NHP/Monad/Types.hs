@@ -14,10 +14,6 @@ import           NHP.Monad.Types.NixBackend
 import           NHP.Script
 import           NHP.Types
 
--- | The derivation monad. We dont derive the 'MonadReader' and
--- 'MonadState' for it to prevent the abuse of these interfaces, which
--- are too generic. The set of low-level methods must be consitent and
--- minimal. Also it must protect us from generating wrong derivations.
 newtype DerivationM script f a = DerivationM
   { unDerivation :: RWST (DrvMethods f) () (DrvResult script) (ResolveM f) a
   } deriving

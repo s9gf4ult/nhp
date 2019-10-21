@@ -3,7 +3,6 @@ module NHP.Monad.Derivation.DrvResult where
 import           Control.Monad.Trans.RWS.Strict (RWST (..))
 import           Data.Map.Strict                as M
 import           NHP.Imports
-import           NHP.Monad.Derivation.Backend
 import           NHP.Monad.Types
 import           NHP.Script
 import           NHP.Types

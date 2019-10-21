@@ -246,4 +246,6 @@ language_extensions:
   - PartialTypeSignatures
   - ScopedTypeVariables
   - TupleSections
+  - KindSignatures
+  - FunctionalDependencies
   - TypeApplications
