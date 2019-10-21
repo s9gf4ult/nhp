@@ -45,10 +45,9 @@ library
                   , NHP.Monad
                   , NHP.Monad.Bucket
                   , NHP.Monad.Derivation
+                  , NHP.Monad.Derivation.Backend
                   , NHP.Monad.Derivation.DrvResult
-                  , NHP.Monad.Derivation.Type
                   , NHP.Monad.Resolve
-                  , NHP.Monad.Resolve.Type
                   , NHP.Monad.Resolve.Utils
                   , NHP.Monad.Types
                   , NHP.Monad.Types.Error
