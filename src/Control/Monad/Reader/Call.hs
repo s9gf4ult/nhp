@@ -18,7 +18,7 @@ instance MapResult a b a b where
   {-# INLINE mapResult #-}
 
 instance MapResult a b f g => MapResult a b (x -> f) (x -> g) where
-  mapResult ab xf x = mapResult ab (xf x)
+  mapResult ab xf = \x -> mapResult ab (xf x)
   {-# INLINE mapResult #-}
 
 class RCall (r :: (* -> *) -> *) (m :: * -> *) v t
