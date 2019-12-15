@@ -21,6 +21,3 @@ import           Data.Traversable             as X
 import           Data.Vector                  as X (Vector)
 import           GHC.Generics                 as X (Generic)
 import           GHC.Stack                    as X
-import           NHP.Error                    as X
-import           NHP.State                    as X
-import           Nix.Derivation               as X

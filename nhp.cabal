@@ -40,27 +40,29 @@ library
                      , TupleSections
                      , TypeApplications
   exposed-modules:  Control.Monad.Reader.Call
-                  , NHP.Error
                   , NHP.Imports
-                  , NHP.Monad
-                  , NHP.Monad.Bucket
-                  , NHP.Monad.Derivation
-                  , NHP.Monad.Derivation.Backend
-                  , NHP.Monad.Derivation.DrvResult
-                  , NHP.Monad.Resolve
-                  , NHP.Monad.Resolve.Utils
-                  , NHP.Monad.Types
-                  , NHP.Monad.Types.Error
-                  , NHP.Monad.Types.NixBackend
-                  , NHP.PackageImports
-                  , NHP.Packages
-                  , NHP.Packages.Hello
-                  , NHP.Script
-                  , NHP.State
+                  , NHP.Monad.BucketGen.Base
+                  , NHP.Monad.DrvEval.Cache
                   , NHP.Types
-                  , NHP.Types.Aux
-                  , NHP.Types.Package
-                  , NHP.Utils
+
+                  -- , NHP.Monad
+                  -- , NHP.Monad.Bucket
+                  -- , NHP.Monad.Derivation
+                  -- , NHP.Monad.Derivation.Backend
+                  -- , NHP.Error
+                  -- , NHP.Monad.Derivation.DrvResult
+                  -- , NHP.Monad.Resolve
+                  -- , NHP.Monad.Resolve.Utils
+                  -- , NHP.Monad.Types
+                  -- , NHP.Monad.Types.Error
+                  -- , NHP.Monad.Types.NixBackend
+                  -- , NHP.PackageImports
+                  -- , NHP.Script
+                  -- , NHP.State
+                  -- , NHP.Types
+                  -- , NHP.Types.Aux
+                  -- , NHP.Types.Package
+                  -- , NHP.Utils
   build-depends:       base ^>=4.12.0.0
                      , MonadRandom
                      , bytestring
