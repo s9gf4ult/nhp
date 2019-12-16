@@ -1,4 +1,4 @@
-module NHP.Monad.DrvEval.Cache where
+module NHP.Monad.DrvEval.Base where
 
 import           Control.Lens
 import           Control.Monad.Except

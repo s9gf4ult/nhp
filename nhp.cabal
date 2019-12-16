@@ -42,7 +42,7 @@ library
   exposed-modules:  Control.Monad.Reader.Call
                   , NHP.Imports
                   , NHP.Monad.BucketGen.Base
-                  , NHP.Monad.DrvEval.Cache
+                  , NHP.Monad.DrvEval.Base
                   , NHP.Types
 
                   -- , NHP.Monad
