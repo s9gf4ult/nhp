@@ -7,20 +7,6 @@ import           Filesystem.Path.CurrentOS as F
 import           NHP.Imports
 import           NHP.Types
 
--- | The nix-store backend
-data NixBackend f = NixBackend
-  { _storeAdd       :: HasCallStack => F.FilePath -> f Path
-  -- ^ Store derivation or other path in the Nix store
-  , _storeAddBinary :: HasCallStack => ByteString -> f Path
-  -- ^ Store binary data in the store and return the path
-  , _evalOutputPath
-    :: HasCallStack
-    => Derivation
-    -- ^ Derivation with empty outputs
-    -> OutputId
-    -> Output
-    -> f DerivationOutput
-  }
 
 fpFromText :: Text -> F.FilePath
 fpFromText = F.fromText . T.toStrict
