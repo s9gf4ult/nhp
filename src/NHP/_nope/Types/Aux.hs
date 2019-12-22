@@ -8,10 +8,6 @@ import           Filesystem.Path.CurrentOS
 import           NHP.Imports
 import           Prelude                   hiding (FilePath)
 
-newtype Path = Path
-  { pathText :: Text
-  } deriving (Show, Eq, Ord, IsString)
-
 _Path :: Prism' Path FilePath
 _Path = prism' b f
   where
@@ -36,21 +32,8 @@ data Url
 urlText :: Url -> Text
 urlText = error "FIXME: urlText not implemented"
 
-data Sha256 = Sha256 ByteString
-  deriving (Eq, Ord, Show)
-
 sha256Text :: Sha256 -> Text
 sha256Text = error "FIXME: sha256Text not implemented"
-
-newtype OutputId = OutputId
-  { outputIdText :: Text
-  } deriving (Show, Eq, Ord, IsString)
-
-instance Default OutputId where
-  def = "out"
-
-data Output = SimpleOutput | FixedHashOutput Sha256
-  deriving (Ord, Eq, Show)
 
 newtype OutputPath = OutputPath
   { unOutputPath :: Text

@@ -9,15 +9,18 @@ newtype BucketBase m a = BucketBase
   } deriving (Functor, Applicative, Monad)
 
 data BaseMethods m = BaseMethods
-  { newDrvId :: m DerivationId
-  } deriving (Generic)
+  { _newDrvId :: HasCallStack => m DerivationId
+  }
 
 type PureBaseMonad m = StateT DerivationId m
 
 pureBaseMethods :: (Monad m) => BaseMethods (PureBaseMonad m)
 pureBaseMethods = BaseMethods
-  { newDrvId = do
+  { _newDrvId = do
       did <- get
       put $ succ did
       return did
   }
+
+-- newDrvId :: BucketBase m DerivationId
+-- newDrvId = error "FIXME: newDrvId not implemented"

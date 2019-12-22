@@ -6,20 +6,20 @@ import qualified Data.Map.Strict      as M
 import           Filesystem.Path      as F
 import           NHP.Imports
 import           NHP.Types
+import qualified Nix.Derivation       as Nix
 
 -- | The most base monad for evaluation. Provides cache evaluation
 -- cache and stuff to work with the nix daemon
-newtype DrvCache m a = DrvCache
-  { unDrvCache :: ReaderT (CacheMethods m, NixMethods m) m a
+newtype EvalBase m a = EvalBase
+  { unEvalBase :: ReaderT (CacheMethods m, NixMethods m) m a
   } deriving (Functor, Applicative, Monad)
-
 
 data CacheMethods m = CacheMethods
   { newDerivation :: HasCallStack => DerivationId -> Derivation -> m ()
   -- ^ The DerivationId must be gotten from the bucket element while evaluation.
   , getDerivation :: HasCallStack => DerivationId -> m (Maybe Derivation)
   -- ^ Get previously putted derivation from cache.
-  } deriving (Generic)
+  }
 
 -- | The nix-store backend
 data NixMethods m = NixMethods
@@ -29,13 +29,12 @@ data NixMethods m = NixMethods
   -- ^ Store binary data in the store and return the path
   , _evalOutputPath
     :: HasCallStack
-    => Derivation
+    => Nix.Derivation
     -- ^ Derivation with empty outputs
     -> OutputId
-    -> Output
-    -> f DerivationOutput
+    -> OutputType
+    -> m Nix.DerivationOutput
   }
-
 
 data PureCacheState = PureCacheState
   { cache     :: Map DerivationId Derivation
